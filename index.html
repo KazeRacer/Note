@@ -2,20 +2,26 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-visual">
   <title>Notes</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✏️</text></svg>">
   <style>
-    * {
-      box-sizing: border-box;
+    * { box-sizing: border-box; }
+
+    :root {
+      --text-main: #37352f;
+      --text-muted: rgba(55, 53, 47, 0.45);
+      --bg-hover: rgba(55, 53, 47, 0.06);
+      --border-subtle: rgba(55, 53, 47, 0.09);
+      --shadow-popover: 0 12px 32px rgba(15, 15, 15, 0.12), 0 2px 6px rgba(15, 15, 15, 0.04);
     }
 
     body { 
-      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; 
-      max-width: 800px; 
-      margin: 40px auto; 
-      padding: 0 24px 100px 24px; 
-      color: #37352f;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+      max-width: 720px; 
+      margin: 0 auto; 
+      padding: 32px 20px 120px 20px; 
+      color: var(--text-main);
       background-color: #ffffff;
       -webkit-font-smoothing: antialiased;
     }
@@ -24,87 +30,71 @@
     .top-bar {
       display: flex;
       justify-content: flex-end;
-      gap: 8px;
-      margin-bottom: 24px;
+      gap: 6px;
+      margin-bottom: 28px;
     }
 
     .btn-action {
       background: transparent;
-      border: 1px solid rgba(55, 53, 47, 0.16);
-      border-radius: 4px;
-      padding: 4px 10px;
-      font-size: 13px;
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 12px;
+      font-weight: 500;
       color: rgba(55, 53, 47, 0.65);
       cursor: pointer;
-      transition: all 0.15s ease;
-      font-family: inherit;
+      transition: all 0.12s ease;
     }
 
     .btn-action:hover {
-      background: rgba(55, 53, 47, 0.08);
-      color: #37352f;
+      background: var(--bg-hover);
+      color: var(--text-main);
     }
 
-    /* Note Title & Headings */
-    .title-input, .editor h1 { 
-      font-size: 34px !important; 
-      font-weight: 700 !important; 
-      color: #37352f !important;
-      font-family: inherit !important;
-      letter-spacing: -0.02em !important;
-      line-height: 1.2 !important;
-      margin: 0 0 16px 0 !important;
-      padding: 0 !important;
-      border: none !important; 
-      outline: none !important;
-      background: transparent !important;
+    /* Note Title */
+    .title-input { 
+      font-size: 36px; 
+      font-weight: 700; 
+      color: var(--text-main);
+      letter-spacing: -0.025em;
+      line-height: 1.15;
+      margin: 0 0 12px 0;
+      padding: 0;
+      border: none; 
+      outline: none;
+      background: transparent;
       width: 100%;
     }
 
-    .title-input::placeholder { 
-      color: rgba(55, 53, 47, 0.25); 
-    }
+    .title-input::placeholder { color: rgba(55, 53, 47, 0.2); }
 
     /* Editor Main Area */
     .editor { 
       width: 100%; 
-      min-height: 70vh; 
-      padding: 0; 
+      min-height: 60vh; 
       font-size: 16px; 
-      line-height: 1.5; 
+      line-height: 1.6; 
       outline: none;
       border: none;
-      overflow-y: auto;
-      color: #37352f;
+      color: var(--text-main);
     }
 
     .editor:empty:before {
       content: attr(data-placeholder);
-      color: rgba(55, 53, 47, 0.35);
+      color: rgba(55, 53, 47, 0.3);
+      pointer-events: none;
     }
 
-    .editor h2 {
-      font-size: 24px;
-      font-weight: 600;
-      margin: 20px 0 6px 0;
-      color: #37352f;
-      letter-spacing: -0.015em;
-      line-height: 1.3;
-    }
+    .editor h1 { font-size: 28px; font-weight: 700; margin: 24px 0 6px 0; letter-spacing: -0.02em; }
+    .editor h2 { font-size: 21px; font-weight: 600; margin: 18px 0 4px 0; letter-spacing: -0.015em; }
 
-    /* --------------------------------------------------
-       TOGGLE BLOCK NOTION-STYLE (ISOLATO & PERFETTO)
-    -------------------------------------------------- */
-    .editor details.notion-toggle {
-      margin: 4px 0;
-      padding: 0;
-    }
+    /* TOGGLE BLOCK */
+    .editor details.notion-toggle { margin: 4px 0; }
 
     .editor summary.notion-toggle-header {
       cursor: pointer;
       list-style: none;
       outline: none;
-      color: #37352f;
       display: flex;
       align-items: center;
       gap: 6px;
@@ -112,20 +102,16 @@
       user-select: none;
     }
 
-    .editor summary.notion-toggle-header::-webkit-details-marker {
-      display: none;
-    }
+    .editor summary.notion-toggle-header::-webkit-details-marker { display: none; }
 
     .editor summary.notion-toggle-header::before {
       content: "▶";
-      display: inline-block;
-      font-size: 10px;
-      color: rgba(55, 53, 47, 0.45);
+      font-size: 9px;
+      color: var(--text-muted);
       transition: transform 0.15s ease;
-      user-select: none;
-      flex-shrink: 0;
       width: 14px;
       text-align: center;
+      flex-shrink: 0;
     }
 
     .editor details.notion-toggle[open] > summary.notion-toggle-header::before {
@@ -135,66 +121,50 @@
     .editor .notion-toggle-title {
       flex-grow: 1;
       outline: none;
-      user-select: text;
       min-height: 24px;
-      line-height: 1.5;
     }
 
     .editor .notion-toggle-body {
-      padding-left: 20px;
-      border-left: 2px solid rgba(55, 53, 47, 0.12);
+      padding-left: 18px;
+      border-left: 2px solid rgba(55, 53, 47, 0.1);
       margin-left: 6px;
       margin-top: 4px;
       margin-bottom: 6px;
     }
 
-    /* Reset Indentazione per elementi dentro il Toggle */
     .editor .notion-toggle-body .todo-item,
     .editor .notion-toggle-body ul,
-    .editor .notion-toggle-body ol {
-      margin-left: 0 !important;
-    }
+    .editor .notion-toggle-body ol { margin-left: 0 !important; }
 
     .editor .notion-toggle-body ul,
-    .editor .notion-toggle-body ol {
-      padding-left: 20px;
-    }
+    .editor .notion-toggle-body ol { padding-left: 18px; }
 
     /* Callout */
     .editor blockquote {
-      margin: 12px 0;
-      padding: 8px 14px;
+      margin: 10px 0;
+      padding: 10px 14px;
       border-left: 3px solid #37352f;
-      background: rgba(55, 53, 47, 0.04);
-      color: #37352f;
-      font-style: normal;
-      border-radius: 0 4px 4px 0;
+      background: rgba(55, 53, 47, 0.035);
+      border-radius: 0 6px 6px 0;
     }
 
-    /* Highlight */
     mark.notion-highlight {
-      background-color: #fbfbca;
+      background-color: #fef3c7;
       color: inherit;
-      padding: 2px 4px;
-      border-radius: 2px;
+      padding: 1px 3px;
+      border-radius: 3px;
     }
 
     /* Lists */
-    .editor ul, .editor ol {
-      padding-left: 24px;
-      margin: 4px 0;
-    }
-    .editor li {
-      margin: 2px 0;
-      line-height: 1.5;
-    }
+    .editor ul, .editor ol { padding-left: 20px; margin: 4px 0; }
+    .editor li { margin: 2px 0; }
 
     /* To-Do Checklist */
     .todo-item {
       display: flex;
       align-items: flex-start;
       gap: 8px;
-      margin: 4px 0;
+      margin: 3px 0;
     }
     .todo-checkbox {
       width: 16px;
@@ -202,109 +172,85 @@
       cursor: pointer;
       accent-color: #2eaadc;
       flex-shrink: 0;
-      margin-top: 4px;
+      margin-top: 5px;
     }
-    .todo-text {
-      flex-grow: 1;
-      outline: none;
-      line-height: 1.5;
-    }
+    .todo-text { flex-grow: 1; outline: none; }
     .todo-item.completed .todo-text {
       text-decoration: line-through;
-      color: rgba(55, 53, 47, 0.4);
+      color: var(--text-muted);
     }
 
     /* Divider */
     hr {
       border: none;
-      border-top: 1px solid rgba(55, 53, 47, 0.16);
-      margin: 20px 0;
-      cursor: default;
+      border-top: 1px solid var(--border-subtle);
+      margin: 18px 0;
     }
 
-    /* Slash & Context Menu */
+    /* Unified Popover Menu */
     .notion-menu {
       display: none;
-      position: absolute;
+      position: fixed;
       z-index: 2000;
       background: #ffffff;
-      border: 1px solid rgba(55, 53, 47, 0.12);
-      box-shadow: 0 8px 24px rgba(15, 15, 15, 0.12);
-      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-popover);
+      border-radius: 10px;
       padding: 6px;
-      width: 280px;
-      max-height: 420px;
+      width: 260px;
+      max-height: 340px;
       overflow-y: auto;
     }
 
     .notion-menu-label {
       font-size: 11px;
       font-weight: 600;
-      color: rgba(55, 53, 47, 0.45);
-      padding: 8px 8px 4px 8px;
+      color: var(--text-muted);
+      padding: 6px 8px 4px 8px;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.04em;
     }
 
     .notion-menu button {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       width: 100%;
       background: transparent;
       border: none;
-      padding: 8px 10px;
-      font-size: 14px;
-      color: #37352f;
+      padding: 6px 8px;
+      font-size: 13.5px;
+      color: var(--text-main);
       cursor: pointer;
       border-radius: 6px;
       text-align: left;
-      font-family: inherit;
-      transition: background 0.1s ease;
     }
 
     .notion-menu button:hover,
     .notion-menu button.selected {
-      background: rgba(55, 53, 47, 0.08);
+      background: var(--bg-hover);
     }
 
     .menu-icon-badge {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 28px;
-      height: 28px;
-      background: rgba(55, 53, 47, 0.06);
+      width: 24px;
+      height: 24px;
+      background: rgba(55, 53, 47, 0.05);
       border-radius: 4px;
-      font-size: 13px;
-      font-weight: 700;
+      font-size: 12px;
+      font-weight: 600;
       color: rgba(55, 53, 47, 0.7);
       flex-shrink: 0;
     }
 
-    .menu-text-group {
-      display: flex;
-      flex-direction: column;
-    }
+    .menu-text-group { display: flex; flex-direction: column; }
+    .menu-title { font-size: 13.5px; font-weight: 500; }
+    .menu-desc { font-size: 11px; color: var(--text-muted); }
+    .notion-menu .divider { height: 1px; background: var(--border-subtle); margin: 4px 0; }
 
-    .menu-title {
-      font-size: 14px;
-      font-weight: 500;
-      color: #37352f;
-    }
-
-    .menu-desc {
-      font-size: 12px;
-      color: rgba(55, 53, 47, 0.45);
-    }
-
-    .notion-menu .divider {
-      height: 1px;
-      background: rgba(55, 53, 47, 0.08);
-      margin: 6px 0;
-    }
-
-    /* Mobile Floating Toolbar */
+    /* Mobile Sticky Toolbar Above Keyboard */
     .mobile-toolbar {
       display: none;
       position: fixed;
@@ -312,12 +258,13 @@
       left: 50%;
       transform: translateX(-50%);
       background: #ffffff;
-      border: 1px solid rgba(55, 53, 47, 0.16);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-      border-radius: 8px;
-      padding: 4px 8px;
-      gap: 4px;
-      z-index: 1000;
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-popover);
+      border-radius: 30px;
+      padding: 4px 10px;
+      gap: 2px;
+      z-index: 1500;
+      align-items: center;
     }
 
     .toolbar-btn {
@@ -325,15 +272,28 @@
       border: none;
       padding: 6px 10px;
       font-size: 14px;
-      color: #37352f;
+      color: var(--text-main);
       cursor: pointer;
-      border-radius: 4px;
+      border-radius: 20px;
       font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
+    .toolbar-btn:active { background: var(--bg-hover); }
+
     @media (max-width: 768px) {
-      .mobile-toolbar {
-        display: flex;
+      body { padding-top: 16px; padding-bottom: 140px; }
+      .mobile-toolbar { display: flex; }
+      .notion-menu {
+        position: fixed;
+        left: 50% !important;
+        transform: translateX(-50%);
+        bottom: 70px !important;
+        top: auto !important;
+        width: 90vw;
+        max-width: 320px;
       }
     }
   </style>
@@ -341,124 +301,88 @@
 <body>
 
   <div class="top-bar">
-    <button class="btn-action" id="btn-copy">📋 Copy Link</button>
-    <button class="btn-action" id="btn-new">➕ New Note</button>
+    <button class="btn-action" id="btn-copy">📋 Copia Link</button>
+    <button class="btn-action" id="btn-new">➕ Nuova Nota</button>
   </div>
 
-  <input type="text" id="title" class="title-input" placeholder="Untitled" value="Notes">
-  <div id="editor" class="editor" contenteditable="true" data-placeholder="Type '/' for commands or start typing..."></div>
+  <input type="text" id="title" class="title-input" placeholder="Senza Titolo" value="Notes">
+  <div id="editor" class="editor" contenteditable="true" data-placeholder="Digita '/' per i comandi..."></div>
 
-  <!-- Slash & Context Menu -->
+  <!-- Command & Context Menu -->
   <div id="command-menu" class="notion-menu">
-    <div class="notion-menu-label">Basic blocks</div>
+    <div class="notion-menu-label">Blocchi Base</div>
     
     <button data-cmd="h1">
       <span class="menu-icon-badge">H1</span>
-      <div class="menu-text-group">
-        <span class="menu-title">Heading 1</span>
-        <span class="menu-desc">Big section heading</span>
-      </div>
+      <div class="menu-text-group"><span class="menu-title">Intestazione 1</span><span class="menu-desc">Titolo grande</span></div>
     </button>
 
     <button data-cmd="h2">
       <span class="menu-icon-badge">H2</span>
-      <div class="menu-text-group">
-        <span class="menu-title">Heading 2</span>
-        <span class="menu-desc">Medium section heading</span>
-      </div>
+      <div class="menu-text-group"><span class="menu-title">Intestazione 2</span><span class="menu-desc">Titolo medio</span></div>
     </button>
 
     <button data-cmd="toggle">
       <span class="menu-icon-badge">▶</span>
-      <div class="menu-text-group">
-        <span class="menu-title">Toggle list</span>
-        <span class="menu-desc">Collapsible content block</span>
-      </div>
+      <div class="menu-text-group"><span class="menu-title">Toggle List</span><span class="menu-desc">Blocco collassabile</span></div>
     </button>
 
     <button data-cmd="todo">
       <span class="menu-icon-badge">☑️</span>
-      <div class="menu-text-group">
-        <span class="menu-title">To-do list</span>
-        <span class="menu-desc">Track tasks with a checkbox</span>
-      </div>
+      <div class="menu-text-group"><span class="menu-title">To-do List</span><span class="menu-desc">Lista di controllo</span></div>
     </button>
 
     <button data-cmd="bullet">
       <span class="menu-icon-badge">•</span>
-      <div class="menu-text-group">
-        <span class="menu-title">Bulleted list</span>
-        <span class="menu-desc">Create a simple bulleted list</span>
-      </div>
+      <div class="menu-text-group"><span class="menu-title">Elenco puntato</span><span class="menu-desc">Lista semplice</span></div>
     </button>
 
     <button data-cmd="number">
       <span class="menu-icon-badge">1.</span>
-      <div class="menu-text-group">
-        <span class="menu-title">Numbered list</span>
-        <span class="menu-desc">Create a list with numbering</span>
-      </div>
+      <div class="menu-text-group"><span class="menu-title">Elenco numerato</span><span class="menu-desc">Lista ordinata</span></div>
     </button>
 
     <button data-cmd="quote">
       <span class="menu-icon-badge">💬</span>
-      <div class="menu-text-group">
-        <span class="menu-title">Callout</span>
-        <span class="menu-desc">Capture a callout or quote</span>
-      </div>
+      <div class="menu-text-group"><span class="menu-title">Callout</span><span class="menu-desc">Evidenzia un testo</span></div>
     </button>
 
     <button data-cmd="hr">
       <span class="menu-icon-badge">➖</span>
-      <div class="menu-text-group">
-        <span class="menu-title">Divider</span>
-        <span class="menu-desc">Visually divide blocks</span>
-      </div>
+      <div class="menu-text-group"><span class="menu-title">Divisore</span><span class="menu-desc">Linea separatrice</span></div>
     </button>
 
     <div class="divider"></div>
-    <div class="notion-menu-label">Inline formatting</div>
+    <div class="notion-menu-label">Formattazione</div>
 
     <button data-cmd="bold">
       <span class="menu-icon-badge"><b>B</b></span>
-      <div class="menu-text-group">
-        <span class="menu-title">Bold</span>
-        <span class="menu-desc">Make text bold</span>
-      </div>
+      <div class="menu-text-group"><span class="menu-title">Grassetto</span></div>
     </button>
 
     <button data-cmd="italic">
       <span class="menu-icon-badge"><i>I</i></span>
-      <div class="menu-text-group">
-        <span class="menu-title">Italic</span>
-        <span class="menu-desc">Italicize text</span>
-      </div>
+      <div class="menu-text-group"><span class="menu-title">Corsivo</span></div>
     </button>
 
     <button data-cmd="strike">
       <span class="menu-icon-badge"><s>S</s></span>
-      <div class="menu-text-group">
-        <span class="menu-title">Strikethrough</span>
-        <span class="menu-desc">Cross out text</span>
-      </div>
+      <div class="menu-text-group"><span class="menu-title">Barrato</span></div>
     </button>
 
     <button data-cmd="highlight">
-      <span class="menu-icon-badge" style="background:#fbfbca;">🟡</span>
-      <div class="menu-text-group">
-        <span class="menu-title">Highlight</span>
-        <span class="menu-desc">Mark text with color</span>
-      </div>
+      <span class="menu-icon-badge" style="background:#fef3c7;">🟡</span>
+      <div class="menu-text-group"><span class="menu-title">Evidenzia</span></div>
     </button>
   </div>
 
-  <!-- Mobile Toolbar -->
+  <!-- Mobile Floating Toolbar -->
   <div class="mobile-toolbar">
-    <button class="toolbar-btn" data-cmd="slash" style="font-weight:700;">/</button>
-    <button class="toolbar-btn" data-cmd="bold">B</button>
+    <button class="toolbar-btn" data-cmd="menu" style="font-size: 16px; font-weight:700;">＋</button>
+    <div style="width:1px; height:16px; background:var(--border-subtle); margin:0 2px;"></div>
+    <button class="toolbar-btn" data-cmd="bold"><b>B</b></button>
     <button class="toolbar-btn" data-cmd="italic"><i>I</i></button>
-    <button class="toolbar-btn" data-cmd="strike"><s>S</s></button>
-    <button class="toolbar-btn" data-cmd="highlight" style="background: #fbfbca;">🟡</button>
+    <button class="toolbar-btn" data-cmd="highlight">🟡</button>
     <button class="toolbar-btn" data-cmd="todo">☑️</button>
     <button class="toolbar-btn" data-cmd="toggle">▶</button>
   </div>
@@ -475,7 +399,6 @@
       if (!selection.rangeCount) return;
       const range = selection.getRangeAt(0);
       let node = range.startContainer;
-      
       if (node.nodeType === 3) node = node.parentNode;
 
       const element = document.createElement(tag);
@@ -485,20 +408,15 @@
         element.innerHTML = textToKeep || '<br>';
       }
 
-      if (node === editor) {
-        range.insertNode(element);
-      } else if (['DIV', 'P', 'H1', 'H2', 'BLOCKQUOTE'].includes(node.tagName)) {
-        node.replaceWith(element);
+      let blockToReplace = node.closest('div, p, h1, h2, blockquote');
+      if (blockToReplace && blockToReplace !== editor) {
+        blockToReplace.replaceWith(element);
       } else {
         range.insertNode(element);
       }
 
-      const newRange = document.createRange();
       const target = element.querySelector('li') || element;
-      newRange.setStart(target, 0);
-      newRange.collapse(true);
-      selection.removeAllRanges();
-      selection.addRange(newRange);
+      setFocusAtEnd(target);
       updateURL();
     }
 
@@ -538,11 +456,7 @@
         range.insertNode(details);
       }
 
-      const newRange = document.createRange();
-      newRange.setStart(titleSpan, 0);
-      newRange.collapse(true);
-      selection.removeAllRanges();
-      selection.addRange(newRange);
+      setFocusAtEnd(titleSpan);
       updateURL();
     }
 
@@ -551,26 +465,22 @@
       if (!selection.rangeCount) return;
       const range = selection.getRangeAt(0);
       let node = range.startContainer;
-
       if (node.nodeType === 3) node = node.parentNode;
 
       const hr = document.createElement('hr');
       const nextDiv = document.createElement('div');
       nextDiv.innerHTML = '<br>';
 
-      if (node.parentNode && node.parentNode !== editor && (node.tagName === 'DIV' || node.tagName === 'P')) {
-        node.replaceWith(hr);
+      let blockToReplace = node.closest('div, p');
+      if (blockToReplace && blockToReplace !== editor) {
+        blockToReplace.replaceWith(hr);
         hr.after(nextDiv);
       } else {
         range.insertNode(hr);
         hr.after(nextDiv);
       }
 
-      const newRange = document.createRange();
-      newRange.setStart(nextDiv, 0);
-      newRange.collapse(true);
-      selection.removeAllRanges();
-      selection.addRange(newRange);
+      setFocusAtEnd(nextDiv);
       updateURL();
     }
 
@@ -616,12 +526,17 @@
       }
 
       const textSpan = todoDiv.querySelector('.todo-text');
-      const newRange = document.createRange();
-      newRange.setStart(textSpan, 0);
-      newRange.collapse(true);
-      selection.removeAllRanges();
-      selection.addRange(newRange);
+      setFocusAtEnd(textSpan);
       updateURL();
+    }
+
+    function setFocusAtEnd(el) {
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
     }
 
     function cleanSlashText() {
@@ -648,7 +563,7 @@
       else if (cmd === 'todo') insertTodo('');
       else if (cmd === 'quote') formatLineBlock('blockquote', '');
       else if (cmd === 'hr') insertDivider();
-      else if (cmd === 'slash') showMenuAtCaret();
+      else if (cmd === 'menu') showMenuAtCaret();
       
       hideMenu();
     }
@@ -673,32 +588,37 @@
       let top = rect.bottom + window.scrollY + 6;
       let left = rect.left + window.scrollX;
 
-      if (rect.width === 0 && rect.height === 0) {
-        top = window.innerHeight / 3;
-        left = window.innerWidth / 2 - 140;
+      if (window.innerWidth <= 768) {
+        commandMenu.style.display = 'block';
+      } else {
+        if (rect.width === 0 && rect.height === 0) {
+          top = window.innerHeight / 3;
+          left = window.innerWidth / 2 - 130;
+        }
+        commandMenu.style.top = `${top}px`;
+        commandMenu.style.left = `${left}px`;
+        commandMenu.style.display = 'block';
       }
-
-      commandMenu.style.top = `${top}px`;
-      commandMenu.style.left = `${left}px`;
-      commandMenu.style.display = 'block';
 
       menuButtons = Array.from(commandMenu.querySelectorAll('button[data-cmd]'));
       selectedIndex = 0;
       updateMenuSelection();
     }
 
-    function hideMenu() {
-      commandMenu.style.display = 'none';
-    }
+    function hideMenu() { commandMenu.style.display = 'none'; }
+    function isMenuVisible() { return commandMenu.style.display === 'block'; }
 
-    function isMenuVisible() {
-      return commandMenu.style.display === 'block';
-    }
-
+    // Intercetta l'input universale (utile per Mobile e Slash)
     editor.addEventListener('input', (e) => {
-      if (e.data === '/') {
+      const selection = window.getSelection();
+      if (!selection.rangeCount) return;
+      const node = selection.getRangeAt(0).startContainer;
+      const text = node.textContent || '';
+      
+      if (text.endsWith('/')) {
         showMenuAtCaret();
       }
+      updateURL();
     });
 
     editor.addEventListener('keydown', (e) => {
@@ -738,7 +658,7 @@
       const caretPos = range.startOffset;
       const lineText = text.slice(0, caretPos);
 
-      // Scorciatoie Trigger
+      // Trigger automatici via spazio
       if (e.key === ' ') {
         if (lineText === '#') { e.preventDefault(); formatLineBlock('h1', text.slice(caretPos)); return; }
         if (lineText === '##') { e.preventDefault(); formatLineBlock('h2', text.slice(caretPos)); return; }
@@ -752,7 +672,7 @@
       if (e.key === 'Enter') {
         let parentBlock = node.nodeType === 1 ? node : node.parentNode;
         
-        // 1. Invio nel Titolo del Toggle -> Vai al primo elemento interno
+        // Invio su titolo Toggle -> va dentro
         const toggleTitle = parentBlock ? parentBlock.closest('.notion-toggle-title') : null;
         if (toggleTitle) {
           e.preventDefault();
@@ -764,16 +684,12 @@
             firstChild.innerHTML = '<br>';
             toggleBody.appendChild(firstChild);
           }
-          const newRange = document.createRange();
-          newRange.setStart(firstChild, 0);
-          newRange.collapse(true);
-          selection.removeAllRanges();
-          selection.addRange(newRange);
+          setFocusAtEnd(firstChild);
           updateURL();
           return;
         }
 
-        // 2. Invio nelle To-Do List (Gestione lineare sia dentro che fuori il Toggle)
+        // Invio su To-Do List
         const currentTodo = parentBlock ? parentBlock.closest('.todo-item') : null;
         if (currentTodo) {
           e.preventDefault();
@@ -785,90 +701,18 @@
             emptyDiv.innerHTML = '<br>';
             currentTodo.after(emptyDiv);
             currentTodo.remove();
-            const newRange = document.createRange();
-            newRange.setStart(emptyDiv, 0);
-            newRange.collapse(true);
-            selection.removeAllRanges();
-            selection.addRange(newRange);
+            setFocusAtEnd(emptyDiv);
           } else {
             insertTodo('', currentTodo);
           }
           updateURL();
           return;
         }
-
-        // 3. Invio su riga vuota dentro il Toggle Body -> Esci dal Toggle
-        const toggleBody = parentBlock ? parentBlock.closest('.notion-toggle-body') : null;
-        if (toggleBody) {
-          const currentBlock = parentBlock.closest('div, p');
-          if (currentBlock && (currentBlock.textContent.trim() === '' || currentBlock.innerHTML === '<br>')) {
-            e.preventDefault();
-            const toggleDetails = toggleBody.closest('details');
-            const newOutsideDiv = document.createElement('div');
-            newOutsideDiv.innerHTML = '<br>';
-            toggleDetails.after(newOutsideDiv);
-            currentBlock.remove();
-
-            const newRange = document.createRange();
-            newRange.setStart(newOutsideDiv, 0);
-            newRange.collapse(true);
-            selection.removeAllRanges();
-            selection.addRange(newRange);
-            updateURL();
-            return;
-          }
-        }
       }
-
-      if (e.key === 'Backspace') {
-        let parentBlock = node.nodeType === 1 ? node : node.parentNode;
-        const toggleBody = parentBlock ? parentBlock.closest('.notion-toggle-body') : null;
-        if (toggleBody && caretPos === 0) {
-          const currentBlock = parentBlock.closest('div, p');
-          if (currentBlock && (currentBlock.textContent.trim() === '' || currentBlock.innerHTML === '<br>')) {
-            e.preventDefault();
-            const toggleDetails = toggleBody.closest('details');
-            const newOutsideDiv = document.createElement('div');
-            newOutsideDiv.innerHTML = '<br>';
-            toggleDetails.after(newOutsideDiv);
-            currentBlock.remove();
-
-            const newRange = document.createRange();
-            newRange.setStart(newOutsideDiv, 0);
-            newRange.collapse(true);
-            selection.removeAllRanges();
-            selection.addRange(newRange);
-            updateURL();
-            return;
-          }
-        }
-      }
-
-      if (e.ctrlKey || e.metaKey) {
-        if (e.shiftKey && e.key.toLowerCase() === 'x') {
-          e.preventDefault();
-          document.execCommand('strikeThrough', false, null);
-          updateURL();
-        }
-        if (e.shiftKey && e.key.toLowerCase() === 'h') {
-          e.preventDefault();
-          toggleHighlight();
-        }
-      }
-    });
-
-    editor.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-      commandMenu.style.top = `${e.pageY}px`;
-      commandMenu.style.left = `${e.pageX}px`;
-      commandMenu.style.display = 'block';
-      menuButtons = Array.from(commandMenu.querySelectorAll('button[data-cmd]'));
-      selectedIndex = 0;
-      updateMenuSelection();
     });
 
     document.addEventListener('click', (e) => {
-      if (!commandMenu.contains(e.target)) {
+      if (!commandMenu.contains(e.target) && !e.target.closest('.mobile-toolbar')) {
         hideMenu();
       }
     });
@@ -898,7 +742,7 @@
       navigator.clipboard.writeText(window.location.href).then(() => {
         const btn = document.getElementById('btn-copy');
         const origText = btn.textContent;
-        btn.textContent = '✅ Copied!';
+        btn.textContent = '✅ Copiato!';
         setTimeout(() => btn.textContent = origText, 1500);
       });
     });
@@ -918,9 +762,7 @@
           document.title = data.t || 'Notes';
 
           editor.querySelectorAll('.todo-checkbox').forEach(cb => {
-            if (cb.hasAttribute('checked')) {
-              cb.checked = true;
-            }
+            if (cb.hasAttribute('checked')) { cb.checked = true; }
           });
         } catch (e) {
           try {
@@ -947,8 +789,6 @@
     }
 
     titleInput.addEventListener('input', updateURL);
-    editor.addEventListener('input', updateURL);
-
     loadFromURL();
   </script>
 </body>
