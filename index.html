@@ -180,11 +180,11 @@
       z-index: 2000;
       background: #ffffff;
       border: 1px solid rgba(55, 53, 47, 0.12);
-      box-shadow: 0 8px 24px rgba(15, 15, 15, 0.1);
+      box-shadow: 0 8px 24px rgba(15, 15, 15, 0.12);
       border-radius: 8px;
       padding: 6px;
-      width: 240px;
-      max-height: 320px;
+      width: 280px;
+      max-height: 420px;
       overflow-y: auto;
     }
 
@@ -192,7 +192,7 @@
       font-size: 11px;
       font-weight: 600;
       color: rgba(55, 53, 47, 0.45);
-      padding: 6px 8px 4px 8px;
+      padding: 8px 8px 4px 8px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
@@ -204,7 +204,7 @@
       width: 100%;
       background: transparent;
       border: none;
-      padding: 6px 8px;
+      padding: 8px 10px;
       font-size: 14px;
       color: #37352f;
       cursor: pointer;
@@ -214,19 +214,20 @@
       transition: background 0.1s ease;
     }
 
-    .notion-menu button:hover {
-      background: rgba(55, 53, 47, 0.06);
+    .notion-menu button:hover,
+    .notion-menu button.selected {
+      background: rgba(55, 53, 47, 0.08);
     }
 
     .menu-icon-badge {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 24px;
-      height: 24px;
+      width: 28px;
+      height: 28px;
       background: rgba(55, 53, 47, 0.06);
       border-radius: 4px;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 700;
       color: rgba(55, 53, 47, 0.7);
       flex-shrink: 0;
@@ -417,6 +418,8 @@
     const titleInput = document.getElementById('title');
     const editor = document.getElementById('editor');
     const commandMenu = document.getElementById('command-menu');
+    let menuButtons = [];
+    let selectedIndex = 0;
 
     function formatLineBlock(tag, textToKeep) {
       const selection = window.getSelection();
@@ -579,6 +582,17 @@
       hideMenu();
     }
 
+    function updateMenuSelection() {
+      menuButtons.forEach((btn, idx) => {
+        if (idx === selectedIndex) {
+          btn.classList.add('selected');
+          btn.scrollIntoView({ block: 'nearest' });
+        } else {
+          btn.classList.remove('selected');
+        }
+      });
+    }
+
     function showMenuAtCaret() {
       const selection = window.getSelection();
       if (!selection.rangeCount) return;
@@ -590,16 +604,24 @@
 
       if (rect.width === 0 && rect.height === 0) {
         top = window.innerHeight / 3;
-        left = window.innerWidth / 2 - 120;
+        left = window.innerWidth / 2 - 140;
       }
 
       commandMenu.style.top = `${top}px`;
       commandMenu.style.left = `${left}px`;
       commandMenu.style.display = 'block';
+
+      menuButtons = Array.from(commandMenu.querySelectorAll('button[data-cmd]'));
+      selectedIndex = 0;
+      updateMenuSelection();
     }
 
     function hideMenu() {
       commandMenu.style.display = 'none';
+    }
+
+    function isMenuVisible() {
+      return commandMenu.style.display === 'block';
     }
 
     // Slash command trigger
@@ -609,29 +631,36 @@
       }
     });
 
-    // Right-Click Menu
-    editor.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-      commandMenu.style.top = `${e.pageY}px`;
-      commandMenu.style.left = `${e.pageX}px`;
-      commandMenu.style.display = 'block';
-    });
-
-    document.addEventListener('click', (e) => {
-      if (!commandMenu.contains(e.target)) {
-        hideMenu();
-      }
-    });
-
-    document.querySelectorAll('[data-cmd]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const cmd = e.currentTarget.getAttribute('data-cmd');
-        executeCommand(cmd);
-      });
-    });
-
-    // Keyboard Shortcuts
+    // Keyboard Navigation for Menu & Shortcuts
     editor.addEventListener('keydown', (e) => {
+      if (isMenuVisible()) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          selectedIndex = (selectedIndex + 1) % menuButtons.length;
+          updateMenuSelection();
+          return;
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          selectedIndex = (selectedIndex - 1 + menuButtons.length) % menuButtons.length;
+          updateMenuSelection();
+          return;
+        }
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (menuButtons[selectedIndex]) {
+            const cmd = menuButtons[selectedIndex].getAttribute('data-cmd');
+            executeCommand(cmd);
+          }
+          return;
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          hideMenu();
+          return;
+        }
+      }
+
       const selection = window.getSelection();
       if (!selection.rangeCount) return;
       const range = selection.getRangeAt(0);
@@ -639,10 +668,6 @@
       const text = node.textContent || '';
       const caretPos = range.startOffset;
       const lineText = text.slice(0, caretPos);
-
-      if (e.key === 'Escape') {
-        hideMenu();
-      }
 
       if (e.key === ' ') {
         if (lineText === '#') { e.preventDefault(); formatLineBlock('h1', text.slice(caretPos)); return; }
@@ -712,6 +737,30 @@
           toggleHighlight();
         }
       }
+    });
+
+    // Right-Click Menu
+    editor.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      commandMenu.style.top = `${e.pageY}px`;
+      commandMenu.style.left = `${e.pageX}px`;
+      commandMenu.style.display = 'block';
+      menuButtons = Array.from(commandMenu.querySelectorAll('button[data-cmd]'));
+      selectedIndex = 0;
+      updateMenuSelection();
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!commandMenu.contains(e.target)) {
+        hideMenu();
+      }
+    });
+
+    document.querySelectorAll('[data-cmd]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const cmd = e.currentTarget.getAttribute('data-cmd');
+        executeCommand(cmd);
+      });
     });
 
     // Checkbox Listener
