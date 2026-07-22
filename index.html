@@ -13,9 +13,20 @@
       padding: 0 15px; 
       color: #222; 
     }
-    h2 { 
-      margin-top: 10px; 
-      font-size: 24px;
+    .title-input { 
+      font-size: 26px; 
+      font-weight: bold; 
+      border: none; 
+      outline: none; 
+      width: 100%; 
+      margin-bottom: 15px; 
+      padding: 4px 0;
+      color: #111;
+      font-family: inherit;
+      background: transparent;
+    }
+    .title-input::placeholder {
+      color: #aaa;
     }
     textarea { 
       width: 100%; 
@@ -32,34 +43,52 @@
   </style>
 </head>
 <body>
-  <h2>Note</h2>
+  <input type="text" id="title" class="title-input" placeholder="Titolo nota..." value="Note">
   <textarea id="editor" placeholder="Scrivi qui..."></textarea>
 
   <script>
+    const titleInput = document.getElementById('title');
     const editor = document.getElementById('editor');
 
-    // 1. Carica il testo presente dopo il # nell'URL
+    // 1. Carica titolo e testo dall'URL
     function loadFromURL() {
       const hash = window.location.hash.substring(1);
       if (hash) {
         try {
-          editor.value = decodeURIComponent(escape(atob(hash)));
+          const decoded = decodeURIComponent(escape(atob(hash)));
+          const data = JSON.parse(decoded);
+          titleInput.value = data.t || 'Note';
+          editor.value = data.b || '';
+          document.title = data.t || 'Note';
         } catch (e) {
-          editor.value = decodeURIComponent(hash);
+          // Fallback per vecchi URL con solo testo grezzo
+          try {
+            editor.value = decodeURIComponent(escape(atob(hash)));
+          } catch(err) {
+            editor.value = decodeURIComponent(hash);
+          }
         }
       }
     }
 
-    // 2. Aggiorna l'URL in tempo reale mentre scrivi
-    editor.addEventListener('input', () => {
-      const text = editor.value;
-      if (text) {
-        const encoded = btoa(unescape(encodeURIComponent(text)));
+    // 2. Salva titolo e testo nell'URL in tempo reale
+    function updateURL() {
+      const titleText = titleInput.value;
+      const bodyText = editor.value;
+
+      document.title = titleText || 'Note';
+
+      if (bodyText || (titleText && titleText !== 'Note')) {
+        const payload = JSON.stringify({ t: titleText, b: bodyText });
+        const encoded = btoa(unescape(encodeURIComponent(payload)));
         history.replaceState(null, null, '#' + encoded);
       } else {
         history.replaceState(null, null, window.location.pathname);
       }
-    });
+    }
+
+    titleInput.addEventListener('input', updateURL);
+    editor.addEventListener('input', updateURL);
 
     loadFromURL();
   </script>
