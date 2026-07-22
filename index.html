@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Note</title>
+  <title>Notes</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✏️</text></svg>">
   <style>
     * {
@@ -45,7 +45,7 @@
       color: #37352f;
     }
 
-    /* Titolo Nota & H1 Identici */
+    /* Note Title & H1 Uniformity */
     .title-input, .editor h1 { 
       font-size: 34px !important; 
       font-weight: 700 !important; 
@@ -92,10 +92,10 @@
       line-height: 1.3;
     }
 
-    /* Citazione / Callout */
+    /* Callout / Quote */
     .editor blockquote {
       margin: 12px 0;
-      padding: 6px 14px;
+      padding: 8px 14px;
       border-left: 3px solid #37352f;
       background: rgba(55, 53, 47, 0.04);
       color: #37352f;
@@ -103,7 +103,7 @@
       border-radius: 0 4px 4px 0;
     }
 
-    /* Evidenziatore */
+    /* Highlight */
     mark.notion-highlight {
       background-color: #fbfbca;
       color: inherit;
@@ -121,7 +121,7 @@
       line-height: 1.5;
     }
 
-    /* Checklist To-Do */
+    /* To-Do Checklist */
     .todo-item {
       display: flex;
       align-items: flex-start;
@@ -146,52 +146,95 @@
       color: rgba(55, 53, 47, 0.4);
     }
 
-    /* Linea divisoria */
+    /* Divider */
     hr {
       border: none;
       border-top: 1px solid rgba(55, 53, 47, 0.16);
       margin: 20px 0;
     }
 
-    /* Menu Contestuale Personalizzato (Tasto Destro & Touch Selection) */
-    .context-menu {
+    /* Notion-Style Command Menu */
+    .notion-menu {
       display: none;
       position: absolute;
       z-index: 2000;
       background: #ffffff;
-      border: 1px solid rgba(55, 53, 47, 0.16);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-      border-radius: 6px;
-      padding: 4px;
-      min-width: 160px;
+      border: 1px solid rgba(55, 53, 47, 0.12);
+      box-shadow: 0 8px 24px rgba(15, 15, 15, 0.1);
+      border-radius: 8px;
+      padding: 6px;
+      width: 240px;
+      max-height: 320px;
+      overflow-y: auto;
     }
 
-    .context-menu button {
+    .notion-menu-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(55, 53, 47, 0.45);
+      padding: 6px 8px 4px 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .notion-menu button {
       display: flex;
       align-items: center;
+      gap: 12px;
       width: 100%;
       background: transparent;
       border: none;
-      padding: 6px 10px;
+      padding: 6px 8px;
       font-size: 14px;
       color: #37352f;
       cursor: pointer;
-      border-radius: 4px;
+      border-radius: 6px;
       text-align: left;
       font-family: inherit;
+      transition: background 0.1s ease;
     }
 
-    .context-menu button:hover {
-      background: rgba(55, 53, 47, 0.08);
+    .notion-menu button:hover {
+      background: rgba(55, 53, 47, 0.06);
     }
 
-    .context-menu .divider {
+    .menu-icon-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      background: rgba(55, 53, 47, 0.06);
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 700;
+      color: rgba(55, 53, 47, 0.7);
+      flex-shrink: 0;
+    }
+
+    .menu-text-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .menu-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: #37352f;
+    }
+
+    .menu-desc {
+      font-size: 12px;
+      color: rgba(55, 53, 47, 0.45);
+    }
+
+    .notion-menu .divider {
       height: 1px;
       background: rgba(55, 53, 47, 0.08);
-      margin: 4px 0;
+      margin: 6px 0;
     }
 
-    /* Toolbar Mobile In Basso */
+    /* Mobile Bottom Bar */
     .mobile-toolbar {
       display: none;
       position: fixed;
@@ -228,30 +271,112 @@
 <body>
 
   <div class="top-bar">
-    <button class="btn-action" id="btn-copy">📋 Copia Link</button>
-    <button class="btn-action" id="btn-new">➕ Nuova Nota</button>
+    <button class="btn-action" id="btn-copy">📋 Copy Link</button>
+    <button class="btn-action" id="btn-new">➕ New Note</button>
   </div>
 
-  <input type="text" id="title" class="title-input" placeholder="Senza titolo" value="Note">
-  <div id="editor" class="editor" contenteditable="true" data-placeholder="Scrivi qui... (# H1, ## H2, > citazione, - pallini, 1. numerati, [] to-do, --- linea)"></div>
+  <input type="text" id="title" class="title-input" placeholder="Untitled" value="Notes">
+  <div id="editor" class="editor" contenteditable="true" data-placeholder="Type '/' for commands or start typing..."></div>
 
-  <!-- Custom Context Menu -->
-  <div id="context-menu" class="context-menu">
-    <button data-cmd="h1"><b>H1</b> Titolo Grande</button>
-    <button data-cmd="h2"><b>H2</b> Titolo Medio</button>
+  <!-- Notion-Style Slash & Context Menu -->
+  <div id="command-menu" class="notion-menu">
+    <div class="notion-menu-label">Basic blocks</div>
+    
+    <button data-cmd="h1">
+      <span class="menu-icon-badge">H1</span>
+      <div class="menu-text-group">
+        <span class="menu-title">Heading 1</span>
+        <span class="menu-desc">Big section heading</span>
+      </div>
+    </button>
+
+    <button data-cmd="h2">
+      <span class="menu-icon-badge">H2</span>
+      <div class="menu-text-group">
+        <span class="menu-title">Heading 2</span>
+        <span class="menu-desc">Medium section heading</span>
+      </div>
+    </button>
+
+    <button data-cmd="todo">
+      <span class="menu-icon-badge">☑️</span>
+      <div class="menu-text-group">
+        <span class="menu-title">To-do list</span>
+        <span class="menu-desc">Track tasks with a checkbox</span>
+      </div>
+    </button>
+
+    <button data-cmd="bullet">
+      <span class="menu-icon-badge">•</span>
+      <div class="menu-text-group">
+        <span class="menu-title">Bulleted list</span>
+        <span class="menu-desc">Create a simple bulleted list</span>
+      </div>
+    </button>
+
+    <button data-cmd="number">
+      <span class="menu-icon-badge">1.</span>
+      <div class="menu-text-group">
+        <span class="menu-title">Numbered list</span>
+        <span class="menu-desc">Create a list with numbering</span>
+      </div>
+    </button>
+
+    <button data-cmd="quote">
+      <span class="menu-icon-badge">💬</span>
+      <div class="menu-text-group">
+        <span class="menu-title">Quote</span>
+        <span class="menu-desc">Capture a quote or callout</span>
+      </div>
+    </button>
+
+    <button data-cmd="hr">
+      <span class="menu-icon-badge">➖</span>
+      <div class="menu-text-group">
+        <span class="menu-title">Divider</span>
+        <span class="menu-desc">Visually divide blocks</span>
+      </div>
+    </button>
+
     <div class="divider"></div>
-    <button data-cmd="bold"><b>B</b> Grassetto</button>
-    <button data-cmd="italic"><i>I</i> Corsivo</button>
-    <button data-cmd="strike"><s>S</s> Barrato</button>
-    <button data-cmd="highlight">🟡 Evidenziatore</button>
-    <div class="divider"></div>
-    <button data-cmd="todo">☑️ Checklist</button>
-    <button data-cmd="quote">💬 Citazione</button>
-    <button data-cmd="hr">➖ Linea Divisoria</button>
+    <div class="notion-menu-label">Inline formatting</div>
+
+    <button data-cmd="bold">
+      <span class="menu-icon-badge"><b>B</b></span>
+      <div class="menu-text-group">
+        <span class="menu-title">Bold</span>
+        <span class="menu-desc">Make text bold</span>
+      </div>
+    </button>
+
+    <button data-cmd="italic">
+      <span class="menu-icon-badge"><i>I</i></span>
+      <div class="menu-text-group">
+        <span class="menu-title">Italic</span>
+        <span class="menu-desc">Italicize text</span>
+      </div>
+    </button>
+
+    <button data-cmd="strike">
+      <span class="menu-icon-badge"><s>S</s></span>
+      <div class="menu-text-group">
+        <span class="menu-title">Strikethrough</span>
+        <span class="menu-desc">Cross out text</span>
+      </div>
+    </button>
+
+    <button data-cmd="highlight">
+      <span class="menu-icon-badge" style="background:#fbfbca;">🟡</span>
+      <div class="menu-text-group">
+        <span class="menu-title">Highlight</span>
+        <span class="menu-desc">Mark text with color</span>
+      </div>
+    </button>
   </div>
 
-  <!-- Mobile Floating Bar -->
+  <!-- Mobile Floating Toolbar -->
   <div class="mobile-toolbar">
+    <button class="toolbar-btn" data-cmd="slash" style="font-weight:700;">/</button>
     <button class="toolbar-btn" data-cmd="bold">B</button>
     <button class="toolbar-btn" data-cmd="italic"><i>I</i></button>
     <button class="toolbar-btn" data-cmd="strike"><s>S</s></button>
@@ -263,9 +388,10 @@
   <script>
     const titleInput = document.getElementById('title');
     const editor = document.getElementById('editor');
-    const contextMenu = document.getElementById('context-menu');
+    const commandMenu = document.getElementById('command-menu');
+    let slashTriggered = false;
 
-    // Helper per formattare blocchi
+    // Helper to format line blocks
     function formatLineBlock(tag, textToKeep) {
       const selection = window.getSelection();
       if (!selection.rangeCount) return;
@@ -298,7 +424,7 @@
       updateURL();
     }
 
-    // Toggle Evidenziatore
+    // Toggle Highlight
     function toggleHighlight() {
       const selection = window.getSelection();
       if (!selection.rangeCount || selection.isCollapsed) return;
@@ -317,7 +443,7 @@
       updateURL();
     }
 
-    // Inserisci To-Do
+    // Insert To-Do
     function insertTodo(remainingText = '') {
       const selection = window.getSelection();
       if (!selection.rangeCount) return;
@@ -345,10 +471,24 @@
       updateURL();
     }
 
-    // Esegui comando da menu
+    // Remove current slash character before formatting
+    function cleanSlashText() {
+      const selection = window.getSelection();
+      if (!selection.rangeCount) return;
+      const range = selection.getRangeAt(0);
+      let node = range.startContainer;
+      if (node.nodeType === 3 && node.textContent.includes('/')) {
+        node.textContent = node.textContent.replace('/', '');
+      }
+    }
+
+    // Execute Menu Commands
     function executeCommand(cmd) {
+      cleanSlashText();
       if (cmd === 'h1') formatLineBlock('h1', '');
       else if (cmd === 'h2') formatLineBlock('h2', '');
+      else if (cmd === 'bullet') formatLineBlock('ul', '');
+      else if (cmd === 'number') formatLineBlock('ol', '');
       else if (cmd === 'bold') { document.execCommand('bold'); updateURL(); }
       else if (cmd === 'italic') { document.execCommand('italic'); updateURL(); }
       else if (cmd === 'strike') { document.execCommand('strikeThrough'); updateURL(); }
@@ -356,20 +496,63 @@
       else if (cmd === 'todo') insertTodo('');
       else if (cmd === 'quote') formatLineBlock('blockquote', '');
       else if (cmd === 'hr') formatLineBlock('hr', '');
-      contextMenu.style.display = 'none';
+      else if (cmd === 'slash') showMenuAtCaret();
+      
+      hideMenu();
     }
 
-    // Menu Contestuale Tasto Destro & Selezione Mobile
+    // Menu Position Helpers
+    function showMenuAtCaret() {
+      const selection = window.getSelection();
+      if (!selection.rangeCount) return;
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+
+      let top = rect.bottom + window.scrollY + 6;
+      let left = rect.left + window.scrollX;
+
+      if (rect.width === 0 && rect.height === 0) {
+        top = window.innerHeight / 2;
+        left = window.innerWidth / 2 - 120;
+      }
+
+      commandMenu.style.top = `${top}px`;
+      commandMenu.style.left = `${left}px`;
+      commandMenu.style.display = 'block';
+      slashTriggered = true;
+    }
+
+    function hideMenu() {
+      commandMenu.style.display = 'none';
+      slashTriggered = false;
+    }
+
+    // Slash and Key Events
+    editor.addEventListener('keyup', (e) => {
+      const selection = window.getSelection();
+      if (!selection.rangeCount) return;
+      const range = selection.getRangeAt(0);
+      const node = range.startContainer;
+      const text = node.textContent || '';
+
+      if (e.key === '/') {
+        showMenuAtCaret();
+      } else if (slashTriggered && e.key === 'Escape') {
+        hideMenu();
+      }
+    });
+
+    // Right-Click Context Menu
     editor.addEventListener('contextmenu', (e) => {
       e.preventDefault();
-      contextMenu.style.top = `${e.pageY}px`;
-      contextMenu.style.left = `${e.pageX}px`;
-      contextMenu.style.display = 'block';
+      commandMenu.style.top = `${e.pageY}px`;
+      commandMenu.style.left = `${e.pageX}px`;
+      commandMenu.style.display = 'block';
     });
 
     document.addEventListener('click', (e) => {
-      if (!contextMenu.contains(e.target)) {
-        contextMenu.style.display = 'none';
+      if (!commandMenu.contains(e.target)) {
+        hideMenu();
       }
     });
 
@@ -380,7 +563,7 @@
       });
     });
 
-    // Tastiera Eventi
+    // Standard Keyboard Triggers (#, ##, >, -, 1., [], ---)
     editor.addEventListener('keydown', (e) => {
       const selection = window.getSelection();
       if (!selection.rangeCount) return;
@@ -469,7 +652,7 @@
       }
     });
 
-    // Checkbox Listener
+    // Checkbox State Listener
     editor.addEventListener('change', (e) => {
       if (e.target.classList.contains('todo-checkbox')) {
         const todoItem = e.target.closest('.todo-item');
@@ -484,12 +667,12 @@
       }
     });
 
-    // Top Bar Events
+    // Top Bar Actions
     document.getElementById('btn-copy').addEventListener('click', () => {
       navigator.clipboard.writeText(window.location.href).then(() => {
         const btn = document.getElementById('btn-copy');
         const origText = btn.textContent;
-        btn.textContent = '✅ Copiato!';
+        btn.textContent = '✅ Copied!';
         setTimeout(() => btn.textContent = origText, 1500);
       });
     });
@@ -498,16 +681,16 @@
       window.open(window.location.pathname, '_blank');
     });
 
-    // URL Storage
+    // URL Hash Storage
     function loadFromURL() {
       const hash = window.location.hash.substring(1);
       if (hash) {
         try {
           const decoded = decodeURIComponent(escape(atob(hash)));
           const data = JSON.parse(decoded);
-          titleInput.value = data.t || 'Note';
+          titleInput.value = data.t || 'Notes';
           editor.innerHTML = data.b || '';
-          document.title = data.t || 'Note';
+          document.title = data.t || 'Notes';
 
           editor.querySelectorAll('.todo-checkbox').forEach(cb => {
             if (cb.hasAttribute('checked')) {
@@ -527,9 +710,9 @@
     function updateURL() {
       const titleText = titleInput.value;
       const bodyHTML = editor.innerHTML;
-      document.title = titleText || 'Note';
+      document.title = titleText || 'Notes';
 
-      if (bodyHTML || (titleText && titleText !== 'Note')) {
+      if (bodyHTML || (titleText && titleText !== 'Notes')) {
         const payload = JSON.stringify({ t: titleText, b: bodyHTML });
         const encoded = btoa(unescape(encodeURIComponent(payload)));
         history.replaceState(null, null, '#' + encoded);
