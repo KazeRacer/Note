@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-visual">
-  <title>Notes</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✏️</text></svg>">
+  <title>Note</title>
+  <link id="favicon" rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✏️</text></svg>">
   <style>
     * { box-sizing: border-box; }
 
@@ -31,7 +31,7 @@
       display: flex;
       justify-content: flex-end;
       gap: 6px;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
     }
 
     .btn-action {
@@ -51,14 +51,63 @@
       color: var(--text-main);
     }
 
-    /* Note Title */
+    /* Title & Emoji Picker Area */
+    .header-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      position: relative;
+    }
+
+    .emoji-btn {
+      font-size: 32px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 8px;
+      transition: background 0.12s ease;
+      line-height: 1;
+      user-select: none;
+    }
+
+    .emoji-btn:hover { background: var(--bg-hover); }
+
+    .emoji-picker {
+      display: none;
+      position: absolute;
+      top: 48px;
+      left: 0;
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-popover);
+      border-radius: 10px;
+      padding: 8px;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 4px;
+      z-index: 3000;
+      width: 220px;
+    }
+
+    .emoji-picker button {
+      background: transparent;
+      border: none;
+      font-size: 20px;
+      padding: 6px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .emoji-picker button:hover { background: var(--bg-hover); }
+
     .title-input { 
       font-size: 36px; 
       font-weight: 700; 
       color: var(--text-main);
       letter-spacing: -0.025em;
       line-height: 1.15;
-      margin: 0 0 12px 0;
+      margin: 0;
       padding: 0;
       border: none; 
       outline: none;
@@ -301,78 +350,87 @@
 <body>
 
   <div class="top-bar">
-    <button class="btn-action" id="btn-copy">📋 Copia Link</button>
-    <button class="btn-action" id="btn-new">➕ Nuova Nota</button>
+    <button class="btn-action" id="btn-copy">📋 Copy Link</button>
+    <button class="btn-action" id="btn-new">➕ New Note</button>
   </div>
 
-  <input type="text" id="title" class="title-input" placeholder="Senza Titolo" value="Notes">
-  <div id="editor" class="editor" contenteditable="true" data-placeholder="Digita '/' per i comandi..."></div>
+  <div class="header-group">
+    <button id="emoji-btn" class="emoji-btn" title="Change Icon">✏️</button>
+    <div id="emoji-picker" class="emoji-picker">
+      <button>✏️</button><button>📝</button><button>💡</button><button>📌</button><button>⭐</button><button>🔥</button>
+      <button>🚀</button><button>🎯</button><button>📚</button><button>💻</button><button>🛠️</button><button>🎨</button>
+      <button>✅</button><button>🧠</button><button>📊</button><button>💰</button><button>🌐</button><button>☕</button>
+    </div>
+    <input type="text" id="title" class="title-input" placeholder="Untitled" value="Note">
+  </div>
+
+  <div id="editor" class="editor" contenteditable="true" data-placeholder="Type '/' for commands..."></div>
 
   <!-- Command & Context Menu -->
   <div id="command-menu" class="notion-menu">
-    <div class="notion-menu-label">Blocchi Base</div>
+    <div class="notion-menu-label">Basic Blocks</div>
     
     <button data-cmd="h1">
       <span class="menu-icon-badge">H1</span>
-      <div class="menu-text-group"><span class="menu-title">Intestazione 1</span><span class="menu-desc">Titolo grande</span></div>
+      <div class="menu-text-group"><span class="menu-title">Heading 1</span><span class="menu-desc">Large section title</span></div>
     </button>
 
     <button data-cmd="h2">
       <span class="menu-icon-badge">H2</span>
-      <div class="menu-text-group"><span class="menu-title">Intestazione 2</span><span class="menu-desc">Titolo medio</span></div>
+      <div class="menu-text-group"><span class="menu-title">Heading 2</span><span class="menu-desc">Medium section title</span></div>
     </button>
 
     <button data-cmd="toggle">
       <span class="menu-icon-badge">▶</span>
-      <div class="menu-text-group"><span class="menu-title">Toggle List</span><span class="menu-desc">Blocco collassabile</span></div>
+      <div class="menu-text-group"><span class="menu-title">Toggle List</span><span class="menu-desc">Collapsible block</span></div>
     </button>
 
     <button data-cmd="todo">
       <span class="menu-icon-badge">☑️</span>
-      <div class="menu-text-group"><span class="menu-title">To-do List</span><span class="menu-desc">Lista di controllo</span></div>
+      <div class="menu-text-group"><span class="menu-title">To-do List</span><span class="menu-desc">Track tasks with a checkbox</span></div>
     </button>
 
     <button data-cmd="bullet">
       <span class="menu-icon-badge">•</span>
-      <div class="menu-text-group"><span class="menu-title">Elenco puntato</span><span class="menu-desc">Lista semplice</span></div>
+      <div class="menu-text-group"><span class="menu-title">Bulleted List</span><span class="menu-desc">Simple bullet list</span></div>
     </button>
 
     <button data-cmd="number">
       <span class="menu-icon-badge">1.</span>
-      <div class="menu-text-group"><span class="menu-title">Elenco numerato</span><span class="menu-desc">Lista ordinata</span></div>
+      <div class="menu-text-group"><span class="menu-title">Numbered List</span><span class="menu-desc">Ordered list</span></div>
     </button>
 
     <button data-cmd="quote">
       <span class="menu-icon-badge">💬</span>
-      <div class="menu-text-group"><span class="menu-title">Callout</span><span class="menu-desc">Evidenzia un testo</span></div>
+      <div class="menu-text-group"><span class="menu-title">Callout</span><span class="menu-desc">Highlight important text</span></div>
     </button>
 
     <button data-cmd="hr">
       <span class="menu-icon-badge">➖</span>
-      <div class="menu-text-group"><span class="menu-title">Divisore</span><span class="menu-desc">Linea separatrice</span></div>
+      <div class="menu-text-group"><span class="menu-title">Divider</span><span class="menu-desc">Visual separator</span></div>
     </button>
 
     <div class="divider"></div>
-    <div class="notion-menu-label">Formattazione</div>
+    <div class="notion-menu-label">Formatting</div>
 
     <button data-cmd="bold">
       <span class="menu-icon-badge"><b>B</b></span>
-      <div class="menu-text-group"><span class="menu-title">Grassetto</span></div>
+      <div class="menu-text-group"><span class="menu-title">Bold</span></div>
     </button>
 
     <button data-cmd="italic">
       <span class="menu-icon-badge"><i>I</i></span>
-      <div class="menu-text-group"><span class="menu-title">Corsivo</span></div>
+      <div class="menu-text-group"><span class="menu-title">Italic</span></div>
     </button>
 
     <button data-cmd="strike">
       <span class="menu-icon-badge"><s>S</s></span>
-      <div class="menu-text-group"><span class="menu-title">Barrato</span></div>
+      <div class="menu-text-group"><span class="menu-title">Strikethrough</span></div>
     </button>
 
     <button data-cmd="highlight">
       <span class="menu-icon-badge" style="background:#fef3c7;">🟡</span>
-      <div class="menu-text-group"><span class="menu-title">Evidenzia</span></div>
+      <div class="menu-text-group"><span class="menu-title">Highlight</span></div>
     </button>
   </div>
 
@@ -385,14 +443,40 @@
     <button class="toolbar-btn" data-cmd="highlight">🟡</button>
     <button class="toolbar-btn" data-cmd="todo">☑️</button>
     <button class="toolbar-btn" data-cmd="toggle">▶</button>
+    <button class="toolbar-btn" id="btn-copy-mobile" style="font-size: 12px;">📋 Link</button>
   </div>
 
   <script>
     const titleInput = document.getElementById('title');
     const editor = document.getElementById('editor');
     const commandMenu = document.getElementById('command-menu');
+    const emojiBtn = document.getElementById('emoji-btn');
+    const emojiPicker = document.getElementById('emoji-picker');
+    const favicon = document.getElementById('favicon');
+
+    let currentEmoji = '✏️';
     let menuButtons = [];
     let selectedIndex = 0;
+
+    // Change Favicon Dynamically
+    function setFavicon(emoji) {
+      currentEmoji = emoji;
+      emojiBtn.textContent = emoji;
+      favicon.href = `data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>${emoji}</text></svg>`;
+    }
+
+    emojiBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      emojiPicker.style.display = emojiPicker.style.display === 'grid' ? 'none' : 'grid';
+    });
+
+    emojiPicker.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        setFavicon(btn.textContent);
+        emojiPicker.style.display = 'none';
+        updateURL();
+      });
+    });
 
     function formatLineBlock(tag, textToKeep) {
       const selection = window.getSelection();
@@ -608,7 +692,6 @@
     function hideMenu() { commandMenu.style.display = 'none'; }
     function isMenuVisible() { return commandMenu.style.display === 'block'; }
 
-    // Intercetta l'input universale (utile per Mobile e Slash)
     editor.addEventListener('input', (e) => {
       const selection = window.getSelection();
       if (!selection.rangeCount) return;
@@ -658,7 +741,6 @@
       const caretPos = range.startOffset;
       const lineText = text.slice(0, caretPos);
 
-      // Trigger automatici via spazio
       if (e.key === ' ') {
         if (lineText === '#') { e.preventDefault(); formatLineBlock('h1', text.slice(caretPos)); return; }
         if (lineText === '##') { e.preventDefault(); formatLineBlock('h2', text.slice(caretPos)); return; }
@@ -672,7 +754,6 @@
       if (e.key === 'Enter') {
         let parentBlock = node.nodeType === 1 ? node : node.parentNode;
         
-        // Invio su titolo Toggle -> va dentro
         const toggleTitle = parentBlock ? parentBlock.closest('.notion-toggle-title') : null;
         if (toggleTitle) {
           e.preventDefault();
@@ -689,7 +770,6 @@
           return;
         }
 
-        // Invio su To-Do List
         const currentTodo = parentBlock ? parentBlock.closest('.todo-item') : null;
         if (currentTodo) {
           e.preventDefault();
@@ -715,6 +795,9 @@
       if (!commandMenu.contains(e.target) && !e.target.closest('.mobile-toolbar')) {
         hideMenu();
       }
+      if (!emojiPicker.contains(e.target) && e.target !== emojiBtn) {
+        emojiPicker.style.display = 'none';
+      }
     });
 
     document.querySelectorAll('[data-cmd]').forEach(btn => {
@@ -738,14 +821,16 @@
       }
     });
 
-    document.getElementById('btn-copy').addEventListener('click', () => {
+    function copyLinkHandler(btnElement) {
       navigator.clipboard.writeText(window.location.href).then(() => {
-        const btn = document.getElementById('btn-copy');
-        const origText = btn.textContent;
-        btn.textContent = '✅ Copiato!';
-        setTimeout(() => btn.textContent = origText, 1500);
+        const origText = btnElement.textContent;
+        btnElement.textContent = '✅ Copied!';
+        setTimeout(() => btnElement.textContent = origText, 1500);
       });
-    });
+    }
+
+    document.getElementById('btn-copy').addEventListener('click', (e) => copyLinkHandler(e.target));
+    document.getElementById('btn-copy-mobile').addEventListener('click', (e) => copyLinkHandler(e.target));
 
     document.getElementById('btn-new').addEventListener('click', () => {
       window.open(window.location.pathname, '_blank');
@@ -757,9 +842,11 @@
         try {
           const decoded = decodeURIComponent(escape(atob(hash)));
           const data = JSON.parse(decoded);
-          titleInput.value = data.t || 'Notes';
+          titleInput.value = data.t || 'Note';
           editor.innerHTML = data.b || '';
-          document.title = data.t || 'Notes';
+          if (data.e) setFavicon(data.e);
+
+          document.title = `${currentEmoji} ${data.t || 'Note'}`;
 
           editor.querySelectorAll('.todo-checkbox').forEach(cb => {
             if (cb.hasAttribute('checked')) { cb.checked = true; }
@@ -777,10 +864,10 @@
     function updateURL() {
       const titleText = titleInput.value;
       const bodyHTML = editor.innerHTML;
-      document.title = titleText || 'Notes';
+      document.title = `${currentEmoji} ${titleText || 'Note'}`;
 
-      if (bodyHTML || (titleText && titleText !== 'Notes')) {
-        const payload = JSON.stringify({ t: titleText, b: bodyHTML });
+      if (bodyHTML || (titleText && titleText !== 'Note') || currentEmoji !== '✏️') {
+        const payload = JSON.stringify({ t: titleText, b: bodyHTML, e: currentEmoji });
         const encoded = btoa(unescape(encodeURIComponent(payload)));
         history.replaceState(null, null, '#' + encoded);
       } else {
