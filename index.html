@@ -20,7 +20,7 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
       max-width: 720px; 
       margin: 0 auto; 
-      padding: 32px 20px 120px 48px; /* Aumentato padding sinistro per fare spazio all'icona */
+      padding: 32px 20px 120px 48px;
       color: var(--text-main);
       background-color: #ffffff;
       -webkit-font-smoothing: antialiased;
@@ -71,7 +71,6 @@
       line-height: 1;
       user-select: none;
       flex-shrink: 0;
-      /* Spostato più a sinistra rispetto al titolo e al testo della nota */
       margin-left: -48px; 
     }
 
@@ -81,7 +80,7 @@
       display: none;
       position: absolute;
       top: 48px;
-      left: -48px; /* Allineato alla nuova posizione dell'icona */
+      left: -48px;
       background: #ffffff;
       border: 1px solid var(--border-subtle);
       box-shadow: var(--shadow-popover);
@@ -389,8 +388,8 @@
     .toolbar-btn:active { background: var(--bg-hover); }
 
     @media (max-width: 768px) {
-      body { padding: 16px 16px 140px 16px; } /* Reset padding laterale ridotto su mobile se necessario */
-      .emoji-btn { margin-left: 0; } /* Su mobile riallineiamo l'icona per evitare overflow */
+      body { padding: 16px 16px 140px 16px; }
+      .emoji-btn { margin-left: 0; }
       .emoji-picker { left: 0; }
       .mobile-toolbar { display: flex; }
       .notion-menu {
@@ -516,6 +515,7 @@
     let currentEmoji = '✏️';
     let menuButtons = [];
     let selectedIndex = 0;
+    let savedRange = null; // Memorizza la selezione attiva al momento del tasto destro
 
     function setFavicon(emoji) {
       currentEmoji = emoji;
@@ -536,7 +536,17 @@
       });
     });
 
+    // Ripristina la selezione salvata nel DOM
+    function restoreSelection() {
+      if (savedRange) {
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(savedRange);
+      }
+    }
+
     function formatLineBlock(tag, textToKeep) {
+      restoreSelection();
       const selection = window.getSelection();
       if (!selection.rangeCount) return;
       const range = selection.getRangeAt(0);
@@ -563,6 +573,7 @@
     }
 
     function insertToggleBlock(textToKeep = '') {
+      restoreSelection();
       const selection = window.getSelection();
       if (!selection.rangeCount) return;
       const range = selection.getRangeAt(0);
@@ -603,6 +614,7 @@
     }
 
     function insertDivider() {
+      restoreSelection();
       const selection = window.getSelection();
       if (!selection.rangeCount) return;
       const range = selection.getRangeAt(0);
@@ -627,6 +639,7 @@
     }
 
     function toggleHighlight() {
+      restoreSelection();
       const selection = window.getSelection();
       if (!selection.rangeCount || selection.isCollapsed) return;
 
@@ -645,6 +658,7 @@
     }
 
     function insertTodo(remainingText = '', targetContainer = null) {
+      restoreSelection();
       const selection = window.getSelection();
       if (!selection.rangeCount && !targetContainer) return;
 
@@ -693,21 +707,36 @@
 
     function executeCommand(cmd) {
       cleanSlashText();
-      if (cmd === 'p') formatLineBlock('div', '');
-      else if (cmd === 'h1') formatLineBlock('h1', '');
-      else if (cmd === 'h2') formatLineBlock('h2', '');
-      else if (cmd === 'h3') formatLineBlock('h3', '');
-      else if (cmd === 'toggle') insertToggleBlock('');
-      else if (cmd === 'bullet') formatLineBlock('ul', '');
-      else if (cmd === 'number') formatLineBlock('ol', '');
-      else if (cmd === 'bold') { document.execCommand('bold'); updateURL(); }
-      else if (cmd === 'italic') { document.execCommand('italic'); updateURL(); }
-      else if (cmd === 'strike') { document.execCommand('strikeThrough'); updateURL(); }
-      else if (cmd === 'highlight') toggleHighlight();
-      else if (cmd === 'todo') insertTodo('');
-      else if (cmd === 'quote') formatLineBlock('blockquote', '');
-      else if (cmd === 'hr') insertDivider();
-      else if (cmd === 'menu') showMenuAtCaret();
+      
+      // Se è un comando inline (bold, italic, strike), usa la selezione esatta dell'utente
+      if (['bold', 'italic', 'strike', 'highlight'].includes(cmd)) {
+        restoreSelection();
+        if (cmd === 'bold') { document.execCommand('bold'); updateURL(); }
+        else if (cmd === 'italic') { document.execCommand('italic'); updateURL(); }
+        else if (cmd === 'strike') { document.execCommand('strikeThrough'); updateURL(); }
+        else if (cmd === 'highlight') toggleHighlight();
+      } else {
+        // Se è un comando di blocco intero, recupera il testo completo della riga/blocco selezionato
+        const selection = window.getSelection();
+        let currentText = '';
+        if (selection.rangeCount) {
+          let node = selection.getRangeAt(0).startContainer;
+          let block = node.nodeType === 3 ? node.parentNode.closest('div, p, h1, h2, h3, blockquote, li, .todo-text') : node.closest('div, p, h1, h2, h3, blockquote, li, .todo-text');
+          if (block) currentText = block.textContent;
+        }
+
+        if (cmd === 'p') formatLineBlock('div', currentText);
+        else if (cmd === 'h1') formatLineBlock('h1', currentText);
+        else if (cmd === 'h2') formatLineBlock('h2', currentText);
+        else if (cmd === 'h3') formatLineBlock('h3', currentText);
+        else if (cmd === 'toggle') insertToggleBlock(currentText);
+        else if (cmd === 'bullet') formatLineBlock('ul', currentText);
+        else if (cmd === 'number') formatLineBlock('ol', currentText);
+        else if (cmd === 'todo') insertTodo(currentText);
+        else if (cmd === 'quote') formatLineBlock('blockquote', currentText);
+        else if (cmd === 'hr') insertDivider();
+        else if (cmd === 'menu') showMenuAtCaret();
+      }
       
       hideMenu();
     }
@@ -724,6 +753,12 @@
     }
 
     function showMenuAtCaret(customTop, customLeft) {
+      // Salva la selezione corrente non appena si apre il menu contestuale
+      const sel = window.getSelection();
+      if (sel.rangeCount > 0) {
+        savedRange = sel.getRangeAt(0);
+      }
+
       if (customTop !== undefined && customLeft !== undefined) {
         commandMenu.style.top = `${customTop}px`;
         commandMenu.style.left = `${customLeft}px`;
