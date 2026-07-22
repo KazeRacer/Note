@@ -92,9 +92,11 @@
       line-height: 1.3;
     }
 
-    /* TOGGLE BLOCK NOTION-STYLE */
+    /* --------------------------------------------------
+       TOGGLE BLOCK NOTION-STYLE (STABILE)
+    -------------------------------------------------- */
     .editor details.notion-toggle {
-      margin: 4px 0;
+      margin: 6px 0;
       padding: 0;
     }
 
@@ -103,7 +105,9 @@
       list-style: none;
       outline: none;
       color: #37352f;
-      display: block;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
       margin: 2px 0;
     }
 
@@ -114,23 +118,44 @@
     .editor summary.notion-toggle-header::before {
       content: "▶";
       display: inline-block;
-      width: 18px;
-      font-size: 11px;
+      font-size: 10px;
       color: rgba(55, 53, 47, 0.45);
       transition: transform 0.15s ease;
       user-select: none;
+      flex-shrink: 0;
+      width: 14px;
+      text-align: center;
     }
 
     .editor details.notion-toggle[open] > summary.notion-toggle-header::before {
       transform: rotate(90deg);
     }
 
+    .editor .notion-toggle-title {
+      flex-grow: 1;
+      outline: none;
+      display: inline-block;
+    }
+
+    .editor .notion-toggle-title h1,
+    .editor .notion-toggle-title h2 {
+      display: inline-block;
+      margin: 0 !important;
+    }
+
     .editor .notion-toggle-body {
       padding-left: 20px;
-      border-left: 2px solid rgba(55, 53, 47, 0.08);
-      margin-left: 7px;
+      border-left: 2px solid rgba(55, 53, 47, 0.12);
+      margin-left: 6px;
       margin-top: 4px;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
+    }
+
+    /* Fix per elenchi dentro il Toggle Body: niente ri-indentazione eccessiva */
+    .editor .notion-toggle-body ul,
+    .editor .notion-toggle-body ol {
+      padding-left: 18px;
+      margin: 2px 0;
     }
 
     /* Callout */
@@ -488,7 +513,13 @@
 
       const summary = document.createElement('summary');
       summary.className = 'notion-toggle-header';
-      summary.innerHTML = textToKeep || '<br>';
+
+      const titleSpan = document.createElement('span');
+      titleSpan.className = 'notion-toggle-title';
+      titleSpan.contentEditable = 'true';
+      titleSpan.innerHTML = textToKeep || '<br>';
+
+      summary.appendChild(titleSpan);
 
       const body = document.createElement('div');
       body.className = 'notion-toggle-body';
@@ -504,7 +535,7 @@
       }
 
       const newRange = document.createRange();
-      newRange.setStart(summary, 0);
+      newRange.setStart(titleSpan, 0);
       newRange.collapse(true);
       selection.removeAllRanges();
       selection.addRange(newRange);
@@ -713,11 +744,11 @@
       if (e.key === 'Enter') {
         let parentBlock = node.nodeType === 1 ? node : node.parentNode;
         
-        // Gestione A Capo dentro il Toggle Header -> Scendi nel Body
-        const toggleHeader = parentBlock ? parentBlock.closest('.notion-toggle-header') : null;
-        if (toggleHeader) {
+        // 1. Invio nel Titolo del Toggle -> Scendi al primo elemento del Body
+        const toggleTitle = parentBlock ? parentBlock.closest('.notion-toggle-title') : null;
+        if (toggleTitle) {
           e.preventDefault();
-          const toggleDetails = toggleHeader.closest('details');
+          const toggleDetails = toggleTitle.closest('details');
           const toggleBody = toggleDetails.querySelector('.notion-toggle-body');
           let firstChild = toggleBody.firstElementChild;
           if (!firstChild) {
@@ -734,17 +765,24 @@
           return;
         }
 
-        // Gestione A Capo riga vuota dentro il Toggle Body -> Esci dal Toggle
+        // 2. Invio su riga vuota dentro il Toggle Body -> Esci dal Toggle
         const toggleBody = parentBlock ? parentBlock.closest('.notion-toggle-body') : null;
         if (toggleBody) {
-          const currentDiv = parentBlock.closest('div');
-          if (currentDiv && (currentDiv.textContent.trim() === '' || currentDiv.innerHTML === '<br>')) {
+          const currentBlock = parentBlock.closest('div, p, li');
+          if (currentBlock && (currentBlock.textContent.trim() === '' || currentBlock.innerHTML === '<br>')) {
             e.preventDefault();
             const toggleDetails = toggleBody.closest('details');
             const newOutsideDiv = document.createElement('div');
             newOutsideDiv.innerHTML = '<br>';
             toggleDetails.after(newOutsideDiv);
-            currentDiv.remove();
+
+            if (currentBlock.tagName === 'LI') {
+              const parentList = currentBlock.closest('ul, ol');
+              currentBlock.remove();
+              if (parentList && parentList.children.length === 0) parentList.remove();
+            } else {
+              currentBlock.remove();
+            }
 
             const newRange = document.createRange();
             newRange.setStart(newOutsideDiv, 0);
@@ -805,14 +843,21 @@
         let parentBlock = node.nodeType === 1 ? node : node.parentNode;
         const toggleBody = parentBlock ? parentBlock.closest('.notion-toggle-body') : null;
         if (toggleBody && caretPos === 0) {
-          const currentDiv = parentBlock.closest('div');
-          if (currentDiv && (currentDiv.textContent.trim() === '' || currentDiv.innerHTML === '<br>')) {
+          const currentBlock = parentBlock.closest('div, p, li');
+          if (currentBlock && (currentBlock.textContent.trim() === '' || currentBlock.innerHTML === '<br>')) {
             e.preventDefault();
             const toggleDetails = toggleBody.closest('details');
             const newOutsideDiv = document.createElement('div');
             newOutsideDiv.innerHTML = '<br>';
             toggleDetails.after(newOutsideDiv);
-            currentDiv.remove();
+
+            if (currentBlock.tagName === 'LI') {
+              const parentList = currentBlock.closest('ul, ol');
+              currentBlock.remove();
+              if (parentList && parentList.children.length === 0) parentList.remove();
+            } else {
+              currentBlock.remove();
+            }
 
             const newRange = document.createRange();
             newRange.setStart(newOutsideDiv, 0);
