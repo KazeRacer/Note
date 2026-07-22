@@ -92,7 +92,26 @@
       line-height: 1.3;
     }
 
-    /* Callout / Quote */
+    /* Toggle Block (Collapsible) */
+    .editor details {
+      margin: 6px 0;
+      padding: 2px 0;
+    }
+
+    .editor summary {
+      cursor: pointer;
+      font-weight: 500;
+      outline: none;
+      color: #37352f;
+      list-style-position: inside;
+    }
+
+    .editor .toggle-content {
+      padding-left: 20px;
+      margin-top: 4px;
+    }
+
+    /* Callout */
     .editor blockquote {
       margin: 12px 0;
       padding: 8px 14px;
@@ -151,6 +170,7 @@
       border: none;
       border-top: 1px solid rgba(55, 53, 47, 0.16);
       margin: 20px 0;
+      cursor: default;
     }
 
     /* Notion-Style Command Menu */
@@ -298,6 +318,14 @@
       </div>
     </button>
 
+    <button data-cmd="toggle">
+      <span class="menu-icon-badge">▶</span>
+      <div class="menu-text-group">
+        <span class="menu-title">Toggle list</span>
+        <span class="menu-desc">Collapsible content block</span>
+      </div>
+    </button>
+
     <button data-cmd="todo">
       <span class="menu-icon-badge">☑️</span>
       <div class="menu-text-group">
@@ -325,8 +353,8 @@
     <button data-cmd="quote">
       <span class="menu-icon-badge">💬</span>
       <div class="menu-text-group">
-        <span class="menu-title">Quote</span>
-        <span class="menu-desc">Capture a quote or callout</span>
+        <span class="menu-title">Callout</span>
+        <span class="menu-desc">Capture a callout or quote</span>
       </div>
     </button>
 
@@ -382,16 +410,14 @@
     <button class="toolbar-btn" data-cmd="strike"><s>S</s></button>
     <button class="toolbar-btn" data-cmd="highlight" style="background: #fbfbca;">🟡</button>
     <button class="toolbar-btn" data-cmd="todo">☑️</button>
-    <button class="toolbar-btn" data-cmd="quote">💬</button>
+    <button class="toolbar-btn" data-cmd="toggle">▶</button>
   </div>
 
   <script>
     const titleInput = document.getElementById('title');
     const editor = document.getElementById('editor');
     const commandMenu = document.getElementById('command-menu');
-    let slashTriggered = false;
 
-    // Helper to format line blocks
     function formatLineBlock(tag, textToKeep) {
       const selection = window.getSelection();
       if (!selection.rangeCount) return;
@@ -409,7 +435,7 @@
 
       if (node === editor) {
         range.insertNode(element);
-      } else if (node.tagName === 'DIV' || node.tagName === 'P' || node.tagName === 'H1' || node.tagName === 'H2' || node.tagName === 'BLOCKQUOTE') {
+      } else if (['DIV', 'P', 'H1', 'H2', 'BLOCKQUOTE', 'DETAILS'].includes(node.tagName)) {
         node.replaceWith(element);
       } else {
         range.insertNode(element);
@@ -424,7 +450,61 @@
       updateURL();
     }
 
-    // Toggle Highlight
+    function insertToggleBlock(textToKeep = '') {
+      const selection = window.getSelection();
+      if (!selection.rangeCount) return;
+      const range = selection.getRangeAt(0);
+      let node = range.startContainer;
+
+      const details = document.createElement('details');
+      details.open = true;
+      details.innerHTML = `<summary>${textToKeep || 'Toggle'}</summary><div class="toggle-content"><div><br></div></div>`;
+
+      if (node.nodeType === 3) node = node.parentNode;
+
+      if (node.parentNode && node.parentNode !== editor && (node.tagName === 'DIV' || node.tagName === 'P')) {
+        node.replaceWith(details);
+      } else {
+        range.insertNode(details);
+      }
+
+      const summary = details.querySelector('summary');
+      const newRange = document.createRange();
+      newRange.setStart(summary, summary.childNodes.length);
+      newRange.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(newRange);
+      updateURL();
+    }
+
+    function insertDivider() {
+      const selection = window.getSelection();
+      if (!selection.rangeCount) return;
+      const range = selection.getRangeAt(0);
+      let node = range.startContainer;
+
+      if (node.nodeType === 3) node = node.parentNode;
+
+      const hr = document.createElement('hr');
+      const nextDiv = document.createElement('div');
+      nextDiv.innerHTML = '<br>';
+
+      if (node.parentNode && node.parentNode !== editor && (node.tagName === 'DIV' || node.tagName === 'P')) {
+        node.replaceWith(hr);
+        hr.after(nextDiv);
+      } else {
+        range.insertNode(hr);
+        hr.after(nextDiv);
+      }
+
+      const newRange = document.createRange();
+      newRange.setStart(nextDiv, 0);
+      newRange.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(newRange);
+      updateURL();
+    }
+
     function toggleHighlight() {
       const selection = window.getSelection();
       if (!selection.rangeCount || selection.isCollapsed) return;
@@ -443,7 +523,6 @@
       updateURL();
     }
 
-    // Insert To-Do
     function insertTodo(remainingText = '') {
       const selection = window.getSelection();
       if (!selection.rangeCount) return;
@@ -471,7 +550,6 @@
       updateURL();
     }
 
-    // Remove current slash character before formatting
     function cleanSlashText() {
       const selection = window.getSelection();
       if (!selection.rangeCount) return;
@@ -482,11 +560,11 @@
       }
     }
 
-    // Execute Menu Commands
     function executeCommand(cmd) {
       cleanSlashText();
       if (cmd === 'h1') formatLineBlock('h1', '');
       else if (cmd === 'h2') formatLineBlock('h2', '');
+      else if (cmd === 'toggle') insertToggleBlock('');
       else if (cmd === 'bullet') formatLineBlock('ul', '');
       else if (cmd === 'number') formatLineBlock('ol', '');
       else if (cmd === 'bold') { document.execCommand('bold'); updateURL(); }
@@ -495,13 +573,12 @@
       else if (cmd === 'highlight') toggleHighlight();
       else if (cmd === 'todo') insertTodo('');
       else if (cmd === 'quote') formatLineBlock('blockquote', '');
-      else if (cmd === 'hr') formatLineBlock('hr', '');
+      else if (cmd === 'hr') insertDivider();
       else if (cmd === 'slash') showMenuAtCaret();
       
       hideMenu();
     }
 
-    // Menu Position Helpers
     function showMenuAtCaret() {
       const selection = window.getSelection();
       if (!selection.rangeCount) return;
@@ -512,37 +589,27 @@
       let left = rect.left + window.scrollX;
 
       if (rect.width === 0 && rect.height === 0) {
-        top = window.innerHeight / 2;
+        top = window.innerHeight / 3;
         left = window.innerWidth / 2 - 120;
       }
 
       commandMenu.style.top = `${top}px`;
       commandMenu.style.left = `${left}px`;
       commandMenu.style.display = 'block';
-      slashTriggered = true;
     }
 
     function hideMenu() {
       commandMenu.style.display = 'none';
-      slashTriggered = false;
     }
 
-    // Slash and Key Events
-    editor.addEventListener('keyup', (e) => {
-      const selection = window.getSelection();
-      if (!selection.rangeCount) return;
-      const range = selection.getRangeAt(0);
-      const node = range.startContainer;
-      const text = node.textContent || '';
-
-      if (e.key === '/') {
+    // Slash command trigger
+    editor.addEventListener('input', (e) => {
+      if (e.data === '/') {
         showMenuAtCaret();
-      } else if (slashTriggered && e.key === 'Escape') {
-        hideMenu();
       }
     });
 
-    // Right-Click Context Menu
+    // Right-Click Menu
     editor.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       commandMenu.style.top = `${e.pageY}px`;
@@ -563,7 +630,7 @@
       });
     });
 
-    // Standard Keyboard Triggers (#, ##, >, -, 1., [], ---)
+    // Keyboard Shortcuts
     editor.addEventListener('keydown', (e) => {
       const selection = window.getSelection();
       if (!selection.rangeCount) return;
@@ -573,10 +640,15 @@
       const caretPos = range.startOffset;
       const lineText = text.slice(0, caretPos);
 
+      if (e.key === 'Escape') {
+        hideMenu();
+      }
+
       if (e.key === ' ') {
         if (lineText === '#') { e.preventDefault(); formatLineBlock('h1', text.slice(caretPos)); return; }
         if (lineText === '##') { e.preventDefault(); formatLineBlock('h2', text.slice(caretPos)); return; }
-        if (lineText === '>') { e.preventDefault(); formatLineBlock('blockquote', text.slice(caretPos)); return; }
+        if (lineText === '>') { e.preventDefault(); insertToggleBlock(text.slice(caretPos)); return; }
+        if (lineText === '"') { e.preventDefault(); formatLineBlock('blockquote', text.slice(caretPos)); return; }
         if (lineText === '-' || lineText === '*') { e.preventDefault(); formatLineBlock('ul', text.slice(caretPos)); return; }
         if (lineText === '1.') { e.preventDefault(); formatLineBlock('ol', text.slice(caretPos)); return; }
         if (lineText === '[]') { e.preventDefault(); insertTodo(text.slice(caretPos)); return; }
@@ -586,17 +658,7 @@
         if (lineText.trim() === '---') {
           e.preventDefault();
           node.textContent = '';
-          const hr = document.createElement('hr');
-          const nextLine = document.createElement('div');
-          nextLine.innerHTML = '<br>';
-          range.insertNode(nextLine);
-          range.insertNode(hr);
-          const newRange = document.createRange();
-          newRange.setStart(nextLine, 0);
-          newRange.collapse(true);
-          selection.removeAllRanges();
-          selection.addRange(newRange);
-          updateURL();
+          insertDivider();
           return;
         }
 
@@ -652,7 +714,7 @@
       }
     });
 
-    // Checkbox State Listener
+    // Checkbox Listener
     editor.addEventListener('change', (e) => {
       if (e.target.classList.contains('todo-checkbox')) {
         const todoItem = e.target.closest('.todo-item');
@@ -681,7 +743,7 @@
       window.open(window.location.pathname, '_blank');
     });
 
-    // URL Hash Storage
+    // URL Storage
     function loadFromURL() {
       const hash = window.location.hash.substring(1);
       if (hash) {
