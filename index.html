@@ -20,7 +20,7 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
       max-width: 720px; 
       margin: 0 auto; 
-      padding: 32px 20px 120px 20px; 
+      padding: 32px 20px 120px 48px; /* Aumentato padding sinistro per fare spazio all'icona */
       color: var(--text-main);
       background-color: #ffffff;
       -webkit-font-smoothing: antialiased;
@@ -58,7 +58,6 @@
       gap: 8px;
       margin-bottom: 16px;
       position: relative;
-      margin-left: -8px;
     }
 
     .emoji-btn {
@@ -72,6 +71,8 @@
       line-height: 1;
       user-select: none;
       flex-shrink: 0;
+      /* Spostato più a sinistra rispetto al titolo e al testo della nota */
+      margin-left: -48px; 
     }
 
     .emoji-btn:hover { background: var(--bg-hover); }
@@ -80,7 +81,7 @@
       display: none;
       position: absolute;
       top: 48px;
-      left: 0;
+      left: -48px; /* Allineato alla nuova posizione dell'icona */
       background: #ffffff;
       border: 1px solid var(--border-subtle);
       box-shadow: var(--shadow-popover);
@@ -90,6 +91,7 @@
       gap: 4px;
       z-index: 3000;
       width: 220px;
+      box-sizing: border-box;
     }
 
     .emoji-picker button {
@@ -99,6 +101,11 @@
       padding: 6px;
       border-radius: 6px;
       cursor: pointer;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
     }
 
     .emoji-picker button:hover { background: var(--bg-hover); }
@@ -275,7 +282,7 @@
       border-radius: 10px;
       padding: 6px;
       width: 280px;
-      max-height: 460px; /* Aumentato per mostrare più opzioni */
+      max-height: 460px;
       overflow-y: auto;
       overflow-x: hidden;
     }
@@ -382,9 +389,10 @@
     .toolbar-btn:active { background: var(--bg-hover); }
 
     @media (max-width: 768px) {
-      body { padding-top: 16px; padding-bottom: 140px; }
+      body { padding: 16px 16px 140px 16px; } /* Reset padding laterale ridotto su mobile se necessario */
+      .emoji-btn { margin-left: 0; } /* Su mobile riallineiamo l'icona per evitare overflow */
+      .emoji-picker { left: 0; }
       .mobile-toolbar { display: flex; }
-      .header-group { margin-left: 0; }
       .notion-menu {
         position: fixed;
         left: 50% !important;
@@ -418,7 +426,6 @@
 
   <!-- Command Menu -->
   <div id="command-menu" class="notion-menu">
-    <!-- SEZIONE IN CIMA: INTESTAZIONI -->
     <div class="notion-menu-label">Intestazioni</div>
     <button data-cmd="p">
       <span class="menu-icon-badge">T</span>
@@ -439,7 +446,6 @@
 
     <div class="divider"></div>
 
-    <!-- SEZIONE CENTRALE: BLOCCHI -->
     <div class="notion-menu-label">Blocchi</div>
     <button data-cmd="bullet">
       <span class="menu-icon-badge">•</span>
@@ -468,7 +474,6 @@
 
     <div class="divider"></div>
 
-    <!-- SEZIONE IN FONDO: FORMATTAZIONE -->
     <div class="notion-menu-label">Formattazione</div>
     <button data-cmd="bold">
       <span class="menu-icon-badge"><b>B</b></span>
@@ -753,7 +758,6 @@
     function hideMenu() { commandMenu.style.display = 'none'; }
     function isMenuVisible() { return commandMenu.style.display === 'block'; }
 
-    // GESTIONE TASTO DESTRO (CONTEXT MENU)
     editor.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       showMenuAtCaret(e.clientY + window.scrollY, e.clientX + window.scrollX);
@@ -772,7 +776,6 @@
     });
 
     editor.addEventListener('keydown', (e) => {
-      // NAVIGAZIONE MENU A TASTIERA (SENZA LOOP)
       if (isMenuVisible()) {
         if (e.key === 'ArrowDown') {
           e.preventDefault();
@@ -813,7 +816,6 @@
       const caretPos = range.startOffset;
       const lineText = text.slice(0, caretPos);
 
-      // SCORCIATOIE DA TASTIERA
       if (e.key === ' ') {
         if (lineText === '#') { e.preventDefault(); formatLineBlock('h1', text.slice(caretPos)); return; }
         if (lineText === '##') { e.preventDefault(); formatLineBlock('h2', text.slice(caretPos)); return; }
@@ -827,7 +829,6 @@
 
       let parentBlock = node.nodeType === 1 ? node : node.parentNode;
 
-      // GESTIONE INVIO E TESTO COLLASSABILE (TOGGLE)
       if (e.key === 'Enter') {
         const toggleDetails = parentBlock ? parentBlock.closest('details.notion-toggle') : null;
 
@@ -868,7 +869,6 @@
           }
         }
 
-        // GESTIONE CHECKLIST / TODO ITEM
         const currentTodo = parentBlock ? parentBlock.closest('.todo-item') : null;
         if (currentTodo) {
           e.preventDefault();
