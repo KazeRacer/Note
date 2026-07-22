@@ -1,841 +1,248 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="it">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Notes</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✏️</text></svg>">
+  <title>Notion Style Toggle Editor</title>
+  
   <style>
     * {
       box-sizing: border-box;
     }
 
-    body { 
-      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; 
-      max-width: 800px; 
-      margin: 40px auto; 
-      padding: 0 24px 100px 24px; 
-      color: #37352f;
-      background-color: #ffffff;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    /* Top Bar */
-    .top-bar {
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f9fafb;
+      color: #374151;
       display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      margin-bottom: 24px;
-    }
-
-    .btn-action {
-      background: transparent;
-      border: 1px solid rgba(55, 53, 47, 0.16);
-      border-radius: 4px;
-      padding: 4px 10px;
-      font-size: 13px;
-      color: rgba(55, 53, 47, 0.65);
-      cursor: pointer;
-      transition: all 0.15s ease;
-      font-family: inherit;
-    }
-
-    .btn-action:hover {
-      background: rgba(55, 53, 47, 0.08);
-      color: #37352f;
-    }
-
-    /* Note Title & H1 Uniformity */
-    .title-input, .editor h1 { 
-      font-size: 34px !important; 
-      font-weight: 700 !important; 
-      color: #37352f !important;
-      font-family: inherit !important;
-      letter-spacing: -0.02em !important;
-      line-height: 1.2 !important;
-      margin: 0 0 16px 0 !important;
-      padding: 0 !important;
-      border: none !important; 
-      outline: none !important;
-      background: transparent !important;
-      width: 100%;
-    }
-
-    .title-input::placeholder { 
-      color: rgba(55, 53, 47, 0.25); 
-    }
-
-    /* Editor */
-    .editor { 
-      width: 100%; 
-      min-height: 70vh; 
-      padding: 0; 
-      font-size: 16px; 
-      line-height: 1.5; 
-      outline: none;
-      border: none;
-      overflow-y: auto;
-      color: #37352f;
-    }
-
-    .editor:empty:before {
-      content: attr(data-placeholder);
-      color: rgba(55, 53, 47, 0.35);
-    }
-
-    .editor h2 {
-      font-size: 24px;
-      font-weight: 600;
-      margin: 24px 0 6px 0;
-      color: #37352f;
-      letter-spacing: -0.015em;
-      line-height: 1.3;
-    }
-
-    /* Toggle Block (Collapsible) */
-    .editor details {
-      margin: 6px 0;
-      padding: 2px 0;
-    }
-
-    .editor summary {
-      cursor: pointer;
-      font-weight: 500;
-      outline: none;
-      color: #37352f;
-      list-style-position: inside;
-    }
-
-    .editor .toggle-content {
-      padding-left: 20px;
-      margin-top: 4px;
-    }
-
-    /* Callout */
-    .editor blockquote {
-      margin: 12px 0;
-      padding: 8px 14px;
-      border-left: 3px solid #37352f;
-      background: rgba(55, 53, 47, 0.04);
-      color: #37352f;
-      font-style: normal;
-      border-radius: 0 4px 4px 0;
-    }
-
-    /* Highlight */
-    mark.notion-highlight {
-      background-color: #fbfbca;
-      color: inherit;
-      padding: 2px 4px;
-      border-radius: 2px;
-    }
-
-    /* Lists */
-    .editor ul, .editor ol {
-      padding-left: 24px;
-      margin: 4px 0;
-    }
-    .editor li {
-      margin: 2px 0;
-      line-height: 1.5;
-    }
-
-    /* To-Do Checklist */
-    .todo-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      margin: 4px 0;
-    }
-    .todo-checkbox {
-      width: 16px;
-      height: 16px;
-      cursor: pointer;
-      accent-color: #2eaadc;
-      flex-shrink: 0;
-      margin-top: 4px;
-    }
-    .todo-text {
-      flex-grow: 1;
-      outline: none;
-      line-height: 1.5;
-    }
-    .todo-item.completed .todo-text {
-      text-decoration: line-through;
-      color: rgba(55, 53, 47, 0.4);
-    }
-
-    /* Divider */
-    hr {
-      border: none;
-      border-top: 1px solid rgba(55, 53, 47, 0.16);
-      margin: 20px 0;
-      cursor: default;
-    }
-
-    /* Notion-Style Command Menu */
-    .notion-menu {
-      display: none;
-      position: absolute;
-      z-index: 2000;
-      background: #ffffff;
-      border: 1px solid rgba(55, 53, 47, 0.12);
-      box-shadow: 0 8px 24px rgba(15, 15, 15, 0.12);
-      border-radius: 8px;
-      padding: 6px;
-      width: 280px;
-      max-height: 420px;
-      overflow-y: auto;
-    }
-
-    .notion-menu-label {
-      font-size: 11px;
-      font-weight: 600;
-      color: rgba(55, 53, 47, 0.45);
-      padding: 8px 8px 4px 8px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .notion-menu button {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      width: 100%;
-      background: transparent;
-      border: none;
-      padding: 8px 10px;
-      font-size: 14px;
-      color: #37352f;
-      cursor: pointer;
-      border-radius: 6px;
-      text-align: left;
-      font-family: inherit;
-      transition: background 0.1s ease;
-    }
-
-    .notion-menu button:hover,
-    .notion-menu button.selected {
-      background: rgba(55, 53, 47, 0.08);
-    }
-
-    .menu-icon-badge {
-      display: inline-flex;
-      align-items: center;
       justify-content: center;
-      width: 28px;
-      height: 28px;
-      background: rgba(55, 53, 47, 0.06);
-      border-radius: 4px;
-      font-size: 13px;
-      font-weight: 700;
-      color: rgba(55, 53, 47, 0.7);
-      flex-shrink: 0;
+      padding: 40px 20px;
+      margin: 0;
     }
 
-    .menu-text-group {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .menu-title {
-      font-size: 14px;
-      font-weight: 500;
-      color: #37352f;
-    }
-
-    .menu-desc {
-      font-size: 12px;
-      color: rgba(55, 53, 47, 0.45);
-    }
-
-    .notion-menu .divider {
-      height: 1px;
-      background: rgba(55, 53, 47, 0.08);
-      margin: 6px 0;
-    }
-
-    /* Mobile Bottom Bar */
-    .mobile-toolbar {
-      display: none;
-      position: fixed;
-      bottom: 12px;
-      left: 50%;
-      transform: translateX(-50%);
+    .editor-container {
+      width: 100%;
+      max-width: 750px;
       background: #ffffff;
-      border: 1px solid rgba(55, 53, 47, 0.16);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e5e7eb;
       border-radius: 8px;
-      padding: 4px 8px;
-      gap: 4px;
-      z-index: 1000;
+      padding: 32px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
 
-    .toolbar-btn {
-      background: transparent;
-      border: none;
-      padding: 6px 10px;
-      font-size: 14px;
-      color: #37352f;
+    /* Stili ProseMirror / TipTap */
+    .ProseMirror {
+      outline: none;
+      min-height: 300px;
+    }
+
+    .ProseMirror p {
+      margin: 4px 0;
+      line-height: 1.6;
+    }
+
+    /* --------------------------------------------------
+       STILI TOGGLE NOTION
+    -------------------------------------------------- */
+    
+    /* Container wrapper */
+    .notion-toggle {
+      margin: 4px 0;
+    }
+
+    /* Summary / Header del Trigger */
+    summary.notion-toggle-header {
       cursor: pointer;
-      border-radius: 4px;
-      font-weight: 600;
+      list-style: none;
+      position: relative;
+      padding-left: 22px;
+      outline: none;
+      user-select: none;
+      display: block;
+      margin: 2px 0;
     }
 
-    @media (max-width: 768px) {
-      .mobile-toolbar {
-        display: flex;
-      }
+    /* Rimuove freccia di default su Safari/Chrome */
+    summary.notion-toggle-header::-webkit-details-marker {
+      display: none;
+    }
+
+    /* Freccia Custom stile Notion */
+    summary.notion-toggle-header::before {
+      content: "▶";
+      position: absolute;
+      left: 4px;
+      top: 2px;
+      font-size: 10px;
+      color: #9ca3af;
+      transition: transform 0.15s ease;
+    }
+
+    /* Rotazione della freccia quando aperto */
+    details.notion-toggle[open] > summary.notion-toggle-header::before {
+      transform: rotate(90deg);
+    }
+
+    /* Body indentato */
+    .notion-toggle-body {
+      padding-left: 22px;
+      border-left: 2px solid #f3f4f6;
+      margin-left: 8px;
+      margin-top: 2px;
+      margin-bottom: 4px;
+    }
+
+    /* Supporto per Headings dentro il trigger */
+    summary.notion-toggle-header h1,
+    summary.notion-toggle-header h2,
+    summary.notion-toggle-header h3 {
+      display: inline;
+      margin: 0;
     }
   </style>
+
+  <!-- TipTap / ProseMirror Bundle CDN -->
+  <script src="https://unpkg.com/@tiptap/pm@2.1.13/dist/index.js"></script>
+  <script src="https://unpkg.com/@tiptap/core@2.1.13/dist/index.js"></script>
+  <script src="https://unpkg.com/@tiptap/starter-kit@2.1.13/dist/index.js"></script>
 </head>
 <body>
 
-  <div class="top-bar">
-    <button class="btn-action" id="btn-copy">📋 Copy Link</button>
-    <button class="btn-action" id="btn-new">➕ New Note</button>
-  </div>
-
-  <input type="text" id="title" class="title-input" placeholder="Untitled" value="Notes">
-  <div id="editor" class="editor" contenteditable="true" data-placeholder="Type '/' for commands or start typing..."></div>
-
-  <!-- Notion-Style Slash & Context Menu -->
-  <div id="command-menu" class="notion-menu">
-    <div class="notion-menu-label">Basic blocks</div>
-    
-    <button data-cmd="h1">
-      <span class="menu-icon-badge">H1</span>
-      <div class="menu-text-group">
-        <span class="menu-title">Heading 1</span>
-        <span class="menu-desc">Big section heading</span>
-      </div>
-    </button>
-
-    <button data-cmd="h2">
-      <span class="menu-icon-badge">H2</span>
-      <div class="menu-text-group">
-        <span class="menu-title">Heading 2</span>
-        <span class="menu-desc">Medium section heading</span>
-      </div>
-    </button>
-
-    <button data-cmd="toggle">
-      <span class="menu-icon-badge">▶</span>
-      <div class="menu-text-group">
-        <span class="menu-title">Toggle list</span>
-        <span class="menu-desc">Collapsible content block</span>
-      </div>
-    </button>
-
-    <button data-cmd="todo">
-      <span class="menu-icon-badge">☑️</span>
-      <div class="menu-text-group">
-        <span class="menu-title">To-do list</span>
-        <span class="menu-desc">Track tasks with a checkbox</span>
-      </div>
-    </button>
-
-    <button data-cmd="bullet">
-      <span class="menu-icon-badge">•</span>
-      <div class="menu-text-group">
-        <span class="menu-title">Bulleted list</span>
-        <span class="menu-desc">Create a simple bulleted list</span>
-      </div>
-    </button>
-
-    <button data-cmd="number">
-      <span class="menu-icon-badge">1.</span>
-      <div class="menu-text-group">
-        <span class="menu-title">Numbered list</span>
-        <span class="menu-desc">Create a list with numbering</span>
-      </div>
-    </button>
-
-    <button data-cmd="quote">
-      <span class="menu-icon-badge">💬</span>
-      <div class="menu-text-group">
-        <span class="menu-title">Callout</span>
-        <span class="menu-desc">Capture a callout or quote</span>
-      </div>
-    </button>
-
-    <button data-cmd="hr">
-      <span class="menu-icon-badge">➖</span>
-      <div class="menu-text-group">
-        <span class="menu-title">Divider</span>
-        <span class="menu-desc">Visually divide blocks</span>
-      </div>
-    </button>
-
-    <div class="divider"></div>
-    <div class="notion-menu-label">Inline formatting</div>
-
-    <button data-cmd="bold">
-      <span class="menu-icon-badge"><b>B</b></span>
-      <div class="menu-text-group">
-        <span class="menu-title">Bold</span>
-        <span class="menu-desc">Make text bold</span>
-      </div>
-    </button>
-
-    <button data-cmd="italic">
-      <span class="menu-icon-badge"><i>I</i></span>
-      <div class="menu-text-group">
-        <span class="menu-title">Italic</span>
-        <span class="menu-desc">Italicize text</span>
-      </div>
-    </button>
-
-    <button data-cmd="strike">
-      <span class="menu-icon-badge"><s>S</s></span>
-      <div class="menu-text-group">
-        <span class="menu-title">Strikethrough</span>
-        <span class="menu-desc">Cross out text</span>
-      </div>
-    </button>
-
-    <button data-cmd="highlight">
-      <span class="menu-icon-badge" style="background:#fbfbca;">🟡</span>
-      <div class="menu-text-group">
-        <span class="menu-title">Highlight</span>
-        <span class="menu-desc">Mark text with color</span>
-      </div>
-    </button>
-  </div>
-
-  <!-- Mobile Floating Toolbar -->
-  <div class="mobile-toolbar">
-    <button class="toolbar-btn" data-cmd="slash" style="font-weight:700;">/</button>
-    <button class="toolbar-btn" data-cmd="bold">B</button>
-    <button class="toolbar-btn" data-cmd="italic"><i>I</i></button>
-    <button class="toolbar-btn" data-cmd="strike"><s>S</s></button>
-    <button class="toolbar-btn" data-cmd="highlight" style="background: #fbfbca;">🟡</button>
-    <button class="toolbar-btn" data-cmd="todo">☑️</button>
-    <button class="toolbar-btn" data-cmd="toggle">▶</button>
+  <div class="editor-container">
+    <div id="editor"></div>
   </div>
 
   <script>
-    const titleInput = document.getElementById('title');
-    const editor = document.getElementById('editor');
-    const commandMenu = document.getElementById('command-menu');
-    let menuButtons = [];
-    let selectedIndex = 0;
+    const { Editor, Node, mergeAttributes, InputRule } = window.tiptapCore;
+    const StarterKit = window.tiptapStarterKit.default || window.tiptapStarterKit;
 
-    function formatLineBlock(tag, textToKeep) {
-      const selection = window.getSelection();
-      if (!selection.rangeCount) return;
-      const range = selection.getRangeAt(0);
-      let node = range.startContainer;
-      
-      if (node.nodeType === 3) node = node.parentNode;
+    // 1. Nodo Wrapper ToggleSection (<details>)
+    const ToggleSection = Node.create({
+      name: 'toggleSection',
+      group: 'block',
+      content: 'toggleHeader toggleBody',
+      isolating: true,
 
-      const element = document.createElement(tag);
-      if (tag === 'ul' || tag === 'ol') {
-        element.innerHTML = `<li>${textToKeep || '<br>'}</li>`;
-      } else {
-        element.innerHTML = textToKeep || '<br>';
-      }
-
-      if (node === editor) {
-        range.insertNode(element);
-      } else if (['DIV', 'P', 'H1', 'H2', 'BLOCKQUOTE', 'DETAILS'].includes(node.tagName)) {
-        node.replaceWith(element);
-      } else {
-        range.insertNode(element);
-      }
-
-      const newRange = document.createRange();
-      const target = element.querySelector('li') || element;
-      newRange.setStart(target, 0);
-      newRange.collapse(true);
-      selection.removeAllRanges();
-      selection.addRange(newRange);
-      updateURL();
-    }
-
-    function insertToggleBlock(textToKeep = '') {
-      const selection = window.getSelection();
-      if (!selection.rangeCount) return;
-      const range = selection.getRangeAt(0);
-      let node = range.startContainer;
-
-      const details = document.createElement('details');
-      details.open = true;
-      details.innerHTML = `<summary>${textToKeep || 'Toggle'}</summary><div class="toggle-content"><div><br></div></div>`;
-
-      if (node.nodeType === 3) node = node.parentNode;
-
-      if (node.parentNode && node.parentNode !== editor && (node.tagName === 'DIV' || node.tagName === 'P')) {
-        node.replaceWith(details);
-      } else {
-        range.insertNode(details);
-      }
-
-      const summary = details.querySelector('summary');
-      const newRange = document.createRange();
-      newRange.setStart(summary, summary.childNodes.length);
-      newRange.collapse(true);
-      selection.removeAllRanges();
-      selection.addRange(newRange);
-      updateURL();
-    }
-
-    function insertDivider() {
-      const selection = window.getSelection();
-      if (!selection.rangeCount) return;
-      const range = selection.getRangeAt(0);
-      let node = range.startContainer;
-
-      if (node.nodeType === 3) node = node.parentNode;
-
-      const hr = document.createElement('hr');
-      const nextDiv = document.createElement('div');
-      nextDiv.innerHTML = '<br>';
-
-      if (node.parentNode && node.parentNode !== editor && (node.tagName === 'DIV' || node.tagName === 'P')) {
-        node.replaceWith(hr);
-        hr.after(nextDiv);
-      } else {
-        range.insertNode(hr);
-        hr.after(nextDiv);
-      }
-
-      const newRange = document.createRange();
-      newRange.setStart(nextDiv, 0);
-      newRange.collapse(true);
-      selection.removeAllRanges();
-      selection.addRange(newRange);
-      updateURL();
-    }
-
-    function toggleHighlight() {
-      const selection = window.getSelection();
-      if (!selection.rangeCount || selection.isCollapsed) return;
-
-      const range = selection.getRangeAt(0);
-      const parentMark = selection.anchorNode.parentNode.closest('mark.notion-highlight');
-
-      if (parentMark) {
-        const text = document.createTextNode(parentMark.textContent);
-        parentMark.replaceWith(text);
-      } else {
-        const mark = document.createElement('mark');
-        mark.className = 'notion-highlight';
-        range.surroundContents(mark);
-      }
-      updateURL();
-    }
-
-    function insertTodo(remainingText = '') {
-      const selection = window.getSelection();
-      if (!selection.rangeCount) return;
-      const range = selection.getRangeAt(0);
-      let node = range.startContainer;
-
-      const todoDiv = document.createElement('div');
-      todoDiv.className = 'todo-item';
-      todoDiv.innerHTML = `<input type="checkbox" class="todo-checkbox" contenteditable="false"><span class="todo-text" contenteditable="true">${remainingText || '<br>'}</span>`;
-
-      if (node.nodeType === 3) node = node.parentNode;
-
-      if (node.parentNode && node.parentNode !== editor && (node.tagName === 'DIV' || node.tagName === 'P')) {
-        node.replaceWith(todoDiv);
-      } else {
-        range.insertNode(todoDiv);
-      }
-
-      const textSpan = todoDiv.querySelector('.todo-text');
-      const newRange = document.createRange();
-      newRange.setStart(textSpan, 0);
-      newRange.collapse(true);
-      selection.removeAllRanges();
-      selection.addRange(newRange);
-      updateURL();
-    }
-
-    function cleanSlashText() {
-      const selection = window.getSelection();
-      if (!selection.rangeCount) return;
-      const range = selection.getRangeAt(0);
-      let node = range.startContainer;
-      if (node.nodeType === 3 && node.textContent.includes('/')) {
-        node.textContent = node.textContent.replace('/', '');
-      }
-    }
-
-    function executeCommand(cmd) {
-      cleanSlashText();
-      if (cmd === 'h1') formatLineBlock('h1', '');
-      else if (cmd === 'h2') formatLineBlock('h2', '');
-      else if (cmd === 'toggle') insertToggleBlock('');
-      else if (cmd === 'bullet') formatLineBlock('ul', '');
-      else if (cmd === 'number') formatLineBlock('ol', '');
-      else if (cmd === 'bold') { document.execCommand('bold'); updateURL(); }
-      else if (cmd === 'italic') { document.execCommand('italic'); updateURL(); }
-      else if (cmd === 'strike') { document.execCommand('strikeThrough'); updateURL(); }
-      else if (cmd === 'highlight') toggleHighlight();
-      else if (cmd === 'todo') insertTodo('');
-      else if (cmd === 'quote') formatLineBlock('blockquote', '');
-      else if (cmd === 'hr') insertDivider();
-      else if (cmd === 'slash') showMenuAtCaret();
-      
-      hideMenu();
-    }
-
-    function updateMenuSelection() {
-      menuButtons.forEach((btn, idx) => {
-        if (idx === selectedIndex) {
-          btn.classList.add('selected');
-          btn.scrollIntoView({ block: 'nearest' });
-        } else {
-          btn.classList.remove('selected');
-        }
-      });
-    }
-
-    function showMenuAtCaret() {
-      const selection = window.getSelection();
-      if (!selection.rangeCount) return;
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-
-      let top = rect.bottom + window.scrollY + 6;
-      let left = rect.left + window.scrollX;
-
-      if (rect.width === 0 && rect.height === 0) {
-        top = window.innerHeight / 3;
-        left = window.innerWidth / 2 - 140;
-      }
-
-      commandMenu.style.top = `${top}px`;
-      commandMenu.style.left = `${left}px`;
-      commandMenu.style.display = 'block';
-
-      menuButtons = Array.from(commandMenu.querySelectorAll('button[data-cmd]'));
-      selectedIndex = 0;
-      updateMenuSelection();
-    }
-
-    function hideMenu() {
-      commandMenu.style.display = 'none';
-    }
-
-    function isMenuVisible() {
-      return commandMenu.style.display === 'block';
-    }
-
-    // Slash command trigger
-    editor.addEventListener('input', (e) => {
-      if (e.data === '/') {
-        showMenuAtCaret();
-      }
+      parseHTML() {
+        return [{ tag: 'details' }];
+      },
+      renderHTML({ HTMLAttributes }) {
+        return ['details', mergeAttributes(HTMLAttributes, { class: 'notion-toggle', open: 'open' }), 0];
+      },
     });
 
-    // Keyboard Navigation for Menu & Shortcuts
-    editor.addEventListener('keydown', (e) => {
-      if (isMenuVisible()) {
-        if (e.key === 'ArrowDown') {
-          e.preventDefault();
-          selectedIndex = (selectedIndex + 1) % menuButtons.length;
-          updateMenuSelection();
-          return;
-        }
-        if (e.key === 'ArrowUp') {
-          e.preventDefault();
-          selectedIndex = (selectedIndex - 1 + menuButtons.length) % menuButtons.length;
-          updateMenuSelection();
-          return;
-        }
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          if (menuButtons[selectedIndex]) {
-            const cmd = menuButtons[selectedIndex].getAttribute('data-cmd');
-            executeCommand(cmd);
-          }
-          return;
-        }
-        if (e.key === 'Escape') {
-          e.preventDefault();
-          hideMenu();
-          return;
-        }
-      }
+    // 2. Nodo Trigger/Header (<summary>)
+    const ToggleHeader = Node.create({
+      name: 'toggleHeader',
+      group: 'block',
+      content: 'inline*',
+      defining: true,
 
-      const selection = window.getSelection();
-      if (!selection.rangeCount) return;
-      const range = selection.getRangeAt(0);
-      const node = range.startContainer;
-      const text = node.textContent || '';
-      const caretPos = range.startOffset;
-      const lineText = text.slice(0, caretPos);
-
-      if (e.key === ' ') {
-        if (lineText === '#') { e.preventDefault(); formatLineBlock('h1', text.slice(caretPos)); return; }
-        if (lineText === '##') { e.preventDefault(); formatLineBlock('h2', text.slice(caretPos)); return; }
-        if (lineText === '>') { e.preventDefault(); insertToggleBlock(text.slice(caretPos)); return; }
-        if (lineText === '"') { e.preventDefault(); formatLineBlock('blockquote', text.slice(caretPos)); return; }
-        if (lineText === '-' || lineText === '*') { e.preventDefault(); formatLineBlock('ul', text.slice(caretPos)); return; }
-        if (lineText === '1.') { e.preventDefault(); formatLineBlock('ol', text.slice(caretPos)); return; }
-        if (lineText === '[]') { e.preventDefault(); insertTodo(text.slice(caretPos)); return; }
-      }
-
-      if (e.key === 'Enter') {
-        if (lineText.trim() === '---') {
-          e.preventDefault();
-          node.textContent = '';
-          insertDivider();
-          return;
-        }
-
-        let parentBlock = node.nodeType === 1 ? node : node.parentNode;
-        if (parentBlock && (parentBlock.tagName === 'H1' || parentBlock.tagName === 'H2' || parentBlock.tagName === 'BLOCKQUOTE')) {
-          e.preventDefault();
-          const div = document.createElement('div');
-          div.innerHTML = '<br>';
-          parentBlock.after(div);
-          const newRange = document.createRange();
-          newRange.setStart(div, 0);
-          newRange.collapse(true);
-          selection.removeAllRanges();
-          selection.addRange(newRange);
-          updateURL();
-          return;
-        }
-
-        const currentTodo = parentBlock ? parentBlock.closest('.todo-item') : null;
-        if (currentTodo) {
-          e.preventDefault();
-          const todoText = currentTodo.querySelector('.todo-text');
-          const textContent = todoText ? todoText.textContent.trim() : '';
-
-          if (textContent === '') {
-            const emptyDiv = document.createElement('div');
-            emptyDiv.innerHTML = '<br>';
-            currentTodo.after(emptyDiv);
-            currentTodo.remove();
-            const newRange = document.createRange();
-            newRange.setStart(emptyDiv, 0);
-            newRange.collapse(true);
-            selection.removeAllRanges();
-            selection.addRange(newRange);
-          } else {
-            insertTodo('');
-          }
-          updateURL();
-          return;
-        }
-      }
-
-      if (e.ctrlKey || e.metaKey) {
-        if (e.shiftKey && e.key.toLowerCase() === 'x') {
-          e.preventDefault();
-          document.execCommand('strikeThrough', false, null);
-          updateURL();
-        }
-        if (e.shiftKey && e.key.toLowerCase() === 'h') {
-          e.preventDefault();
-          toggleHighlight();
-        }
-      }
+      parseHTML() {
+        return [{ tag: 'summary' }];
+      },
+      renderHTML({ HTMLAttributes }) {
+        return ['summary', mergeAttributes(HTMLAttributes, { class: 'notion-toggle-header' }), 0];
+      },
     });
 
-    // Right-Click Menu
-    editor.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-      commandMenu.style.top = `${e.pageY}px`;
-      commandMenu.style.left = `${e.pageX}px`;
-      commandMenu.style.display = 'block';
-      menuButtons = Array.from(commandMenu.querySelectorAll('button[data-cmd]'));
-      selectedIndex = 0;
-      updateMenuSelection();
+    // 3. Nodo Body (Contenuto Indentato)
+    const ToggleBody = Node.create({
+      name: 'toggleBody',
+      group: 'block',
+      content: 'block+',
+      defining: true,
+
+      parseHTML() {
+        return [{ tag: 'div' }];
+      },
+      renderHTML({ HTMLAttributes }) {
+        return ['div', mergeAttributes(HTMLAttributes, { class: 'notion-toggle-body' }), 0];
+      },
     });
 
-    document.addEventListener('click', (e) => {
-      if (!commandMenu.contains(e.target)) {
-        hideMenu();
-      }
-    });
+    // Extension personalizzata per raccogliere nodi, regole di input e tasti
+    const NotionToggle = Node.create({
+      name: 'notionToggleExtension',
 
-    document.querySelectorAll('[data-cmd]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const cmd = e.currentTarget.getAttribute('data-cmd');
-        executeCommand(cmd);
-      });
-    });
+      addExtensions() {
+        return [ToggleSection, ToggleHeader, ToggleBody];
+      },
 
-    // Checkbox Listener
-    editor.addEventListener('change', (e) => {
-      if (e.target.classList.contains('todo-checkbox')) {
-        const todoItem = e.target.closest('.todo-item');
-        if (e.target.checked) {
-          todoItem.classList.add('completed');
-          e.target.setAttribute('checked', 'checked');
-        } else {
-          todoItem.classList.remove('completed');
-          e.target.removeAttribute('checked');
-        }
-        updateURL();
-      }
-    });
+      addInputRules() {
+        return [
+          new InputRule({
+            find: /^>\s$/,
+            handler: ({ range, chain }) => {
+              chain()
+                .deleteRange(range)
+                .insertContent({
+                  type: 'toggleSection',
+                  content: [
+                    { type: 'toggleHeader' },
+                    { type: 'toggleBody', content: [{ type: 'paragraph' }] }
+                  ]
+                })
+                .focus()
+                .run();
+            },
+          }),
+        ];
+      },
 
-    // Top Bar Actions
-    document.getElementById('btn-copy').addEventListener('click', () => {
-      navigator.clipboard.writeText(window.location.href).then(() => {
-        const btn = document.getElementById('btn-copy');
-        const origText = btn.textContent;
-        btn.textContent = '✅ Copied!';
-        setTimeout(() => btn.textContent = origText, 1500);
-      });
-    });
+      addKeyboardShortcuts() {
+        return {
+          Enter: ({ editor }) => {
+            const { selection } = editor.state;
+            const { $from } = selection;
 
-    document.getElementById('btn-new').addEventListener('click', () => {
-      window.open(window.location.pathname, '_blank');
-    });
-
-    // URL Storage
-    function loadFromURL() {
-      const hash = window.location.hash.substring(1);
-      if (hash) {
-        try {
-          const decoded = decodeURIComponent(escape(atob(hash)));
-          const data = JSON.parse(decoded);
-          titleInput.value = data.t || 'Notes';
-          editor.innerHTML = data.b || '';
-          document.title = data.t || 'Notes';
-
-          editor.querySelectorAll('.todo-checkbox').forEach(cb => {
-            if (cb.hasAttribute('checked')) {
-              cb.checked = true;
+            // 1. Se sei nell'Header e premi Invio -> scendi nel Body
+            if ($from.parent.type.name === 'toggleHeader') {
+              return editor.commands.focus($from.pos + 2);
             }
-          });
-        } catch (e) {
-          try {
-            editor.innerHTML = decodeURIComponent(escape(atob(hash)));
-          } catch(err) {
-            editor.innerText = decodeURIComponent(hash);
-          }
-        }
-      }
-    }
 
-    function updateURL() {
-      const titleText = titleInput.value;
-      const bodyHTML = editor.innerHTML;
-      document.title = titleText || 'Notes';
+            // 2. Se sei nel Body su riga vuota e premi Invio -> Esci dal Toggle
+            if (
+              $from.parent.type.name === 'paragraph' &&
+              $from.parent.content.size === 0 &&
+              $from.node(-1)?.type.name === 'toggleBody'
+            ) {
+              return editor.chain().lift().run();
+            }
 
-      if (bodyHTML || (titleText && titleText !== 'Notes')) {
-        const payload = JSON.stringify({ t: titleText, b: bodyHTML });
-        const encoded = btoa(unescape(encodeURIComponent(payload)));
-        history.replaceState(null, null, '#' + encoded);
-      } else {
-        history.replaceState(null, null, window.location.pathname);
-      }
-    }
+            return false;
+          },
 
-    titleInput.addEventListener('input', updateURL);
-    editor.addEventListener('input', updateURL);
+          Backspace: ({ editor }) => {
+            const { selection } = editor.state;
+            const { $from } = selection;
 
-    loadFromURL();
+            // Se sei a inizio riga dentro un paragrafo vuoto nel ToggleBody -> Esci dal Toggle
+            if (
+              $from.parent.type.name === 'paragraph' &&
+              $from.parentOffset === 0 &&
+              $from.node(-1)?.type.name === 'toggleBody'
+            ) {
+              return editor.chain().lift().run();
+            }
+
+            return false;
+          },
+        };
+      },
+    });
+
+    // Inizializzazione Editor
+    const editor = new Editor({
+      element: document.querySelector('#editor'),
+      extensions: [
+        StarterKit,
+        NotionToggle,
+      ],
+      content: `
+        <p>Digita <code>&gt;</code> seguito da uno <strong>spazio</strong> per creare un toggle in stile Notion.</p>
+      `,
+    });
   </script>
 </body>
 </html>
