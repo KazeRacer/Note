@@ -28,71 +28,45 @@
     .title-input::placeholder {
       color: #aaa;
     }
-    textarea { 
+    /* Editor HTML modificabile che sostituisce la textarea */
+    .editor { 
       width: 100%; 
-      height: 70vh; 
+      min-height: 70vh; 
       padding: 16px; 
       font-size: 18px; 
       border: 1px solid #ccc; 
       border-radius: 8px; 
       box-sizing: border-box; 
       line-height: 1.6; 
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace, sans-serif; 
-      resize: vertical;
+      outline: none;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+    .editor:empty:before {
+      content: attr(data-placeholder);
+      color: #aaa;
     }
   </style>
 </head>
 <body>
   <input type="text" id="title" class="title-input" placeholder="Titolo nota..." value="Note">
-  <textarea id="editor" placeholder="Scrivi qui... (Usa Ctrl+B per Bold, Ctrl+I per Italic, Ctrl+Shift+X per Strikethrough)"></textarea>
+  <div id="editor" class="editor" contenteditable="true" data-placeholder="Scrivi qui... (Usa Ctrl+B per Bold, Ctrl+I per Italic, Ctrl+Shift+X per Strikethrough)"></div>
 
   <script>
     const titleInput = document.getElementById('title');
     const editor = document.getElementById('editor');
 
-    // 1. Funzione per applicare la formattazione al testo selezionato
-    function applyFormatting(wrapper) {
-      const start = editor.selectionStart;
-      const end = editor.selectionEnd;
-      const text = editor.value;
-      const selectedText = text.substring(start, end);
-
-      const before = text.substring(0, start);
-      const after = text.substring(end);
-
-      editor.value = before + wrapper + selectedText + wrapper + after;
-
-      // Riposiziona il cursore o la selezione
-      if (start === end) {
-        editor.selectionStart = editor.selectionEnd = start + wrapper.length;
-      } else {
-        editor.selectionStart = start;
-        editor.selectionEnd = end + (wrapper.length * 2);
-      }
-
-      editor.focus();
-      updateURL();
-    }
-
-    // 2. Gestione Shortcut da Tastiera
+    // 1. Gestione scorciatoia per il Barrato (Strikethrough) visivo
     editor.addEventListener('keydown', (e) => {
       const isCmdOrCtrl = e.ctrlKey || e.metaKey;
-
-      if (isCmdOrCtrl) {
-        if (e.key.toLowerCase() === 'b') {
-          e.preventDefault();
-          applyFormatting('**');
-        } else if (e.key.toLowerCase() === 'i') {
-          e.preventDefault();
-          applyFormatting('*');
-        } else if (e.key.toLowerCase() === 'x' && e.shiftKey) {
-          e.preventDefault();
-          applyFormatting('~~');
-        }
+      if (isCmdOrCtrl && e.shiftKey && e.key.toLowerCase() === 'x') {
+        e.preventDefault();
+        document.execCommand('strikeThrough', false, null);
+        updateURL();
       }
     });
 
-    // 3. Carica titolo e testo dall'URL
+    // 2. Carica titolo e contenuto HTML dall'URL
     function loadFromURL() {
       const hash = window.location.hash.substring(1);
       if (hash) {
@@ -100,27 +74,28 @@
           const decoded = decodeURIComponent(escape(atob(hash)));
           const data = JSON.parse(decoded);
           titleInput.value = data.t || 'Note';
-          editor.value = data.b || '';
+          editor.innerHTML = data.b || '';
           document.title = data.t || 'Note';
         } catch (e) {
+          // Fallback per vecchi URL di solo testo
           try {
-            editor.value = decodeURIComponent(escape(atob(hash)));
+            editor.innerText = decodeURIComponent(escape(atob(hash)));
           } catch(err) {
-            editor.value = decodeURIComponent(hash);
+            editor.innerText = decodeURIComponent(hash);
           }
         }
       }
     }
 
-    // 4. Salva titolo e testo nell'URL in tempo reale
+    // 3. Salva titolo e codice HTML formattato nell'URL
     function updateURL() {
       const titleText = titleInput.value;
-      const bodyText = editor.value;
+      const bodyHTML = editor.innerHTML;
 
       document.title = titleText || 'Note';
 
-      if (bodyText || (titleText && titleText !== 'Note')) {
-        const payload = JSON.stringify({ t: titleText, b: bodyText });
+      if (bodyHTML || (titleText && titleText !== 'Note')) {
+        const payload = JSON.stringify({ t: titleText, b: bodyHTML });
         const encoded = btoa(unescape(encodeURIComponent(payload)));
         history.replaceState(null, null, '#' + encoded);
       } else {
