@@ -136,8 +136,34 @@
       pointer-events: none;
     }
 
-    .editor h1 { font-size: 28px; font-weight: 700; margin: 24px 0 6px 0; letter-spacing: -0.02em; }
-    .editor h2 { font-size: 21px; font-weight: 600; margin: 18px 0 4px 0; letter-spacing: -0.015em; }
+    /* Headings Style Update */
+    .editor h1 { 
+      font-size: 36px; 
+      font-weight: 700; 
+      margin: 28px 0 8px 0; 
+      letter-spacing: -0.025em; 
+      line-height: 1.15;
+    }
+
+    .editor h2 { 
+      font-size: 24px; 
+      font-weight: 600; 
+      margin: 22px 0 6px 0; 
+      letter-spacing: -0.018em; 
+      line-height: 1.25;
+    }
+
+    .editor h3 { 
+      font-size: 19px; 
+      font-weight: 400; 
+      margin: 16px 0 4px 0; 
+      letter-spacing: -0.01em; 
+      line-height: 1.35;
+    }
+
+    .editor p, .editor div {
+      margin: 4px 0;
+    }
 
     /* TOGGLE BLOCK */
     .editor details.notion-toggle { margin: 4px 0; }
@@ -249,7 +275,7 @@
       border-radius: 10px;
       padding: 6px;
       width: 280px;
-      max-height: 320px;
+      max-height: 460px; /* Aumentato per mostrare più opzioni */
       overflow-y: auto;
       overflow-x: hidden;
     }
@@ -388,19 +414,27 @@
     <input type="text" id="title" class="title-input" placeholder="Untitled" value="Note">
   </div>
 
-  <div id="editor" class="editor" contenteditable="true" data-placeholder="Type '/' for commands..."></div>
+  <div id="editor" class="editor" contenteditable="true" data-placeholder="Type '/' or right click for commands..."></div>
 
   <!-- Command Menu -->
   <div id="command-menu" class="notion-menu">
-    <!-- SEZIONE IN CIMA: HEADING -->
+    <!-- SEZIONE IN CIMA: INTESTAZIONI -->
     <div class="notion-menu-label">Intestazioni</div>
+    <button data-cmd="p">
+      <span class="menu-icon-badge">T</span>
+      <div class="menu-text-group"><span class="menu-title">Text</span><span class="menu-desc">Testo normale</span></div>
+    </button>
     <button data-cmd="h1">
       <span class="menu-icon-badge">H1</span>
-      <div class="menu-text-group"><span class="menu-title">Heading 1</span><span class="menu-desc">Titolo principale</span></div>
+      <div class="menu-text-group"><span class="menu-title">Heading 1</span><span class="menu-desc">Titolo grande</span></div>
     </button>
     <button data-cmd="h2">
       <span class="menu-icon-badge">H2</span>
-      <div class="menu-text-group"><span class="menu-title">Heading 2</span><span class="menu-desc">Sottotitolo</span></div>
+      <div class="menu-text-group"><span class="menu-title">Heading 2</span><span class="menu-desc">Titolo medio</span></div>
+    </button>
+    <button data-cmd="h3">
+      <span class="menu-icon-badge">H3</span>
+      <div class="menu-text-group"><span class="menu-title">Heading 3</span><span class="menu-desc">Titolo piccolo (regular)</span></div>
     </button>
 
     <div class="divider"></div>
@@ -511,7 +545,7 @@
         element.innerHTML = textToKeep || '<br>';
       }
 
-      let blockToReplace = node.closest('div, p, h1, h2, blockquote');
+      let blockToReplace = node.closest('div, p, h1, h2, h3, blockquote');
       if (blockToReplace && blockToReplace !== editor) {
         blockToReplace.replaceWith(element);
       } else {
@@ -530,7 +564,7 @@
       let node = range.startContainer;
       
       let targetNode = node.nodeType === 3 ? node.parentNode : node;
-      let blockToReplace = targetNode.closest('div, p, h1, h2, blockquote');
+      let blockToReplace = targetNode.closest('div, p, h1, h2, h3, blockquote');
 
       const details = document.createElement('details');
       details.className = 'notion-toggle';
@@ -574,7 +608,7 @@
       const nextDiv = document.createElement('div');
       nextDiv.innerHTML = '<br>';
 
-      let blockToReplace = node.closest('div, p');
+      let blockToReplace = node.closest('div, p, h1, h2, h3, blockquote');
       if (blockToReplace && blockToReplace !== editor) {
         blockToReplace.replaceWith(hr);
         hr.after(nextDiv);
@@ -619,7 +653,7 @@
         const range = selection.getRangeAt(0);
         let node = range.startContainer;
         if (node.nodeType === 3) node = node.parentNode;
-        let blockToReplace = node.closest('div, p');
+        let blockToReplace = node.closest('div, p, h1, h2, h3, blockquote');
 
         if (blockToReplace && blockToReplace !== editor && !blockToReplace.classList.contains('notion-toggle-body')) {
           blockToReplace.replaceWith(todoDiv);
@@ -654,8 +688,10 @@
 
     function executeCommand(cmd) {
       cleanSlashText();
-      if (cmd === 'h1') formatLineBlock('h1', '');
+      if (cmd === 'p') formatLineBlock('div', '');
+      else if (cmd === 'h1') formatLineBlock('h1', '');
       else if (cmd === 'h2') formatLineBlock('h2', '');
+      else if (cmd === 'h3') formatLineBlock('h3', '');
       else if (cmd === 'toggle') insertToggleBlock('');
       else if (cmd === 'bullet') formatLineBlock('ul', '');
       else if (cmd === 'number') formatLineBlock('ol', '');
@@ -682,25 +718,31 @@
       });
     }
 
-    function showMenuAtCaret() {
-      const selection = window.getSelection();
-      if (!selection.rangeCount) return;
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-
-      let top = rect.bottom + window.scrollY + 6;
-      let left = rect.left + window.scrollX;
-
-      if (window.innerWidth <= 768) {
+    function showMenuAtCaret(customTop, customLeft) {
+      if (customTop !== undefined && customLeft !== undefined) {
+        commandMenu.style.top = `${customTop}px`;
+        commandMenu.style.left = `${customLeft}px`;
         commandMenu.style.display = 'block';
       } else {
-        if (rect.width === 0 && rect.height === 0) {
-          top = window.innerHeight / 3;
-          left = window.innerWidth / 2 - 140;
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return;
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+
+        let top = rect.bottom + window.scrollY + 6;
+        let left = rect.left + window.scrollX;
+
+        if (window.innerWidth <= 768) {
+          commandMenu.style.display = 'block';
+        } else {
+          if (rect.width === 0 && rect.height === 0) {
+            top = window.innerHeight / 3;
+            left = window.innerWidth / 2 - 140;
+          }
+          commandMenu.style.top = `${top}px`;
+          commandMenu.style.left = `${left}px`;
+          commandMenu.style.display = 'block';
         }
-        commandMenu.style.top = `${top}px`;
-        commandMenu.style.left = `${left}px`;
-        commandMenu.style.display = 'block';
       }
 
       menuButtons = Array.from(commandMenu.querySelectorAll('button[data-cmd]'));
@@ -710,6 +752,12 @@
 
     function hideMenu() { commandMenu.style.display = 'none'; }
     function isMenuVisible() { return commandMenu.style.display === 'block'; }
+
+    // GESTIONE TASTO DESTRO (CONTEXT MENU)
+    editor.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      showMenuAtCaret(e.clientY + window.scrollY, e.clientX + window.scrollX);
+    });
 
     editor.addEventListener('input', (e) => {
       const selection = window.getSelection();
@@ -769,6 +817,7 @@
       if (e.key === ' ') {
         if (lineText === '#') { e.preventDefault(); formatLineBlock('h1', text.slice(caretPos)); return; }
         if (lineText === '##') { e.preventDefault(); formatLineBlock('h2', text.slice(caretPos)); return; }
+        if (lineText === '###') { e.preventDefault(); formatLineBlock('h3', text.slice(caretPos)); return; }
         if (lineText === '>') { e.preventDefault(); insertToggleBlock(text.slice(caretPos)); return; }
         if (lineText === '"') { e.preventDefault(); formatLineBlock('blockquote', text.slice(caretPos)); return; }
         if (lineText === '-' || lineText === '*') { e.preventDefault(); formatLineBlock('ul', text.slice(caretPos)); return; }
