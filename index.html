@@ -1,476 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-visual">
-  <title>Note</title>
-  <link id="favicon" rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✏️</text></svg>">
-  <style>
-    * { box-sizing: border-box; }
-
-    :root {
-      --text-main: #37352f;
-      --text-muted: rgba(55, 53, 47, 0.45);
-      --bg-hover: rgba(55, 53, 47, 0.06);
-      --border-subtle: rgba(55, 53, 47, 0.09);
-      --shadow-popover: 0 12px 32px rgba(15, 15, 15, 0.12), 0 2px 6px rgba(15, 15, 15, 0.04);
-    }
-
-    body { 
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-      max-width: 720px; 
-      margin: 0 auto; 
-      padding: 32px 20px 120px 20px; 
-      color: var(--text-main);
-      background-color: #ffffff;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    /* Top Bar */
-    .top-bar {
-      display: flex;
-      justify-content: flex-end;
-      gap: 6px;
-      margin-bottom: 28px;
-    }
-
-    .btn-action {
-      background: transparent;
-      border: 1px solid var(--border-subtle);
-      border-radius: 6px;
-      padding: 5px 10px;
-      font-size: 12px;
-      font-weight: 500;
-      color: rgba(55, 53, 47, 0.65);
-      cursor: pointer;
-      transition: all 0.12s ease;
-    }
-
-    .btn-action:hover {
-      background: var(--bg-hover);
-      color: var(--text-main);
-    }
-
-    /* Title & Emoji Header Group */
-    .header-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 16px;
-      position: relative;
-      margin-left: -8px; /* Alignment offset for hover state */
-    }
-
-    .emoji-btn {
-      font-size: 32px;
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      padding: 2px 6px;
-      border-radius: 8px;
-      transition: background 0.12s ease;
-      line-height: 1;
-      user-select: none;
-      flex-shrink: 0;
-    }
-
-    .emoji-btn:hover { background: var(--bg-hover); }
-
-    .emoji-picker {
-      display: none;
-      position: absolute;
-      top: 48px;
-      left: 0;
-      background: #ffffff;
-      border: 1px solid var(--border-subtle);
-      box-shadow: var(--shadow-popover);
-      border-radius: 10px;
-      padding: 8px;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 4px;
-      z-index: 3000;
-      width: 220px;
-    }
-
-    .emoji-picker button {
-      background: transparent;
-      border: none;
-      font-size: 20px;
-      padding: 6px;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    .emoji-picker button:hover { background: var(--bg-hover); }
-
-    .title-input { 
-      font-size: 36px; 
-      font-weight: 700; 
-      color: var(--text-main);
-      letter-spacing: -0.025em;
-      line-height: 1.15;
-      margin: 0;
-      padding: 0;
-      border: none; 
-      outline: none;
-      background: transparent;
-      width: 100%;
-    }
-
-    .title-input::placeholder { color: rgba(55, 53, 47, 0.2); }
-
-    /* Editor Main Area */
-    .editor { 
-      width: 100%; 
-      min-height: 60vh; 
-      font-size: 16px; 
-      line-height: 1.6; 
-      outline: none;
-      border: none;
-      color: var(--text-main);
-    }
-
-    .editor:empty:before {
-      content: attr(data-placeholder);
-      color: rgba(55, 53, 47, 0.3);
-      pointer-events: none;
-    }
-
-    .editor h1 { font-size: 28px; font-weight: 700; margin: 24px 0 6px 0; letter-spacing: -0.02em; }
-    .editor h2 { font-size: 21px; font-weight: 600; margin: 18px 0 4px 0; letter-spacing: -0.015em; }
-
-    /* TOGGLE BLOCK */
-    .editor details.notion-toggle { margin: 4px 0; }
-
-    .editor summary.notion-toggle-header {
-      cursor: pointer;
-      list-style: none;
-      outline: none;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin: 2px 0;
-      user-select: none;
-    }
-
-    .editor summary.notion-toggle-header::-webkit-details-marker { display: none; }
-
-    .editor summary.notion-toggle-header::before {
-      content: "▶";
-      font-size: 9px;
-      color: var(--text-muted);
-      transition: transform 0.15s ease;
-      width: 14px;
-      text-align: center;
-      flex-shrink: 0;
-    }
-
-    .editor details.notion-toggle[open] > summary.notion-toggle-header::before {
-      transform: rotate(90deg);
-    }
-
-    .editor .notion-toggle-title {
-      flex-grow: 1;
-      outline: none;
-      min-height: 24px;
-    }
-
-    .editor .notion-toggle-body {
-      padding-left: 18px;
-      border-left: 2px solid rgba(55, 53, 47, 0.1);
-      margin-left: 6px;
-      margin-top: 4px;
-      margin-bottom: 6px;
-    }
-
-    .editor .notion-toggle-body .todo-item,
-    .editor .notion-toggle-body ul,
-    .editor .notion-toggle-body ol { margin-left: 0 !important; }
-
-    .editor .notion-toggle-body ul,
-    .editor .notion-toggle-body ol { padding-left: 18px; }
-
-    /* Callout */
-    .editor blockquote {
-      margin: 10px 0;
-      padding: 10px 14px;
-      border-left: 3px solid #37352f;
-      background: rgba(55, 53, 47, 0.035);
-      border-radius: 0 6px 6px 0;
-    }
-
-    mark.notion-highlight {
-      background-color: #fef3c7;
-      color: inherit;
-      padding: 1px 3px;
-      border-radius: 3px;
-    }
-
-    /* Lists */
-    .editor ul, .editor ol { padding-left: 20px; margin: 4px 0; }
-    .editor li { margin: 2px 0; }
-
-    /* To-Do Checklist */
-    .todo-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      margin: 3px 0;
-    }
-    .todo-checkbox {
-      width: 16px;
-      height: 16px;
-      cursor: pointer;
-      accent-color: #2eaadc;
-      flex-shrink: 0;
-      margin-top: 5px;
-    }
-    .todo-text { flex-grow: 1; outline: none; }
-    .todo-item.completed .todo-text {
-      text-decoration: line-through;
-      color: var(--text-muted);
-    }
-
-    /* Divider */
-    hr {
-      border: none;
-      border-top: 1px solid var(--border-subtle);
-      margin: 18px 0;
-    }
-
-    /* Fixed & Scaled Command Menu */
-    .notion-menu {
-      display: none;
-      position: fixed;
-      z-index: 2000;
-      background: #ffffff;
-      border: 1px solid var(--border-subtle);
-      box-shadow: var(--shadow-popover);
-      border-radius: 10px;
-      padding: 6px;
-      width: 280px;
-      max-height: 320px;
-      overflow-y: auto;
-      overflow-x: hidden;
-    }
-
-    .notion-menu-label {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-muted);
-      padding: 6px 8px 4px 8px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .notion-menu button {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      width: 100%;
-      background: transparent;
-      border: none;
-      padding: 8px;
-      font-size: 13.5px;
-      color: var(--text-main);
-      cursor: pointer;
-      border-radius: 6px;
-      text-align: left;
-      box-sizing: border-box;
-    }
-
-    .notion-menu button:hover,
-    .notion-menu button.selected {
-      background: var(--bg-hover);
-    }
-
-    .menu-icon-badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 24px;
-      height: 24px;
-      background: rgba(55, 53, 47, 0.05);
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: 600;
-      color: rgba(55, 53, 47, 0.7);
-      flex-shrink: 0;
-    }
-
-    .menu-text-group { 
-      display: flex; 
-      flex-direction: column; 
-      overflow: hidden;
-    }
-
-    .menu-title { 
-      font-size: 13.5px; 
-      font-weight: 500; 
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .menu-desc { 
-      font-size: 11px; 
-      color: var(--text-muted); 
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .notion-menu .divider { height: 1px; background: var(--border-subtle); margin: 4px 0; }
-
-    /* Mobile Sticky Toolbar Above Keyboard */
-    .mobile-toolbar {
-      display: none;
-      position: fixed;
-      bottom: 12px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #ffffff;
-      border: 1px solid var(--border-subtle);
-      box-shadow: var(--shadow-popover);
-      border-radius: 30px;
-      padding: 4px 10px;
-      gap: 2px;
-      z-index: 1500;
-      align-items: center;
-    }
-
-    .toolbar-btn {
-      background: transparent;
-      border: none;
-      padding: 6px 10px;
-      font-size: 14px;
-      color: var(--text-main);
-      cursor: pointer;
-      border-radius: 20px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .toolbar-btn:active { background: var(--bg-hover); }
-
-    @media (max-width: 768px) {
-      body { padding-top: 16px; padding-bottom: 140px; }
-      .mobile-toolbar { display: flex; }
-      .header-group { margin-left: 0; }
-      .notion-menu {
-        position: fixed;
-        left: 50% !important;
-        transform: translateX(-50%);
-        bottom: 70px !important;
-        top: auto !important;
-        width: 90vw;
-        max-width: 320px;
-      }
-    }
-  </style>
-</head>
-<body>
-
-  <div class="top-bar">
-    <button class="btn-action" id="btn-copy">📋 Copy Link</button>
-    <button class="btn-action" id="btn-new">➕ New Note</button>
-  </div>
-
-  <div class="header-group">
-    <button id="emoji-btn" class="emoji-btn" title="Change Icon">✏️</button>
-    <div id="emoji-picker" class="emoji-picker">
-      <button>✏️</button><button>📝</button><button>💡</button><button>📌</button><button>⭐</button><button>🔥</button>
-      <button>🚀</button><button>🎯</button><button>📚</button><button>💻</button><button>🛠️</button><button>🎨</button>
-      <button>✅</button><button>🧠</button><button>📊</button><button>💰</button><button>🌐</button><button>☕</button>
-    </div>
-    <input type="text" id="title" class="title-input" placeholder="Untitled" value="Note">
-  </div>
-
-  <div id="editor" class="editor" contenteditable="true" data-placeholder="Type '/' for commands..."></div>
-
-  <!-- Command & Context Menu -->
-  <div id="command-menu" class="notion-menu">
-    <div class="notion-menu-label">Basic Blocks</div>
-    
-    <button data-cmd="h1">
-      <span class="menu-icon-badge">H1</span>
-      <div class="menu-text-group"><span class="menu-title">Heading 1</span><span class="menu-desc">Large section title</span></div>
-    </button>
-
-    <button data-cmd="h2">
-      <span class="menu-icon-badge">H2</span>
-      <div class="menu-text-group"><span class="menu-title">Heading 2</span><span class="menu-desc">Medium section title</span></div>
-    </button>
-
-    <button data-cmd="toggle">
-      <span class="menu-icon-badge">▶</span>
-      <div class="menu-text-group"><span class="menu-title">Toggle List</span><span class="menu-desc">Collapsible block</span></div>
-    </button>
-
-    <button data-cmd="todo">
-      <span class="menu-icon-badge">☑️</span>
-      <div class="menu-text-group"><span class="menu-title">To-do List</span><span class="menu-desc">Track tasks with a checkbox</span></div>
-    </button>
-
-    <button data-cmd="bullet">
-      <span class="menu-icon-badge">•</span>
-      <div class="menu-text-group"><span class="menu-title">Bulleted List</span><span class="menu-desc">Simple bullet list</span></div>
-    </button>
-
-    <button data-cmd="number">
-      <span class="menu-icon-badge">1.</span>
-      <div class="menu-text-group"><span class="menu-title">Numbered List</span><span class="menu-desc">Ordered list</span></div>
-    </button>
-
-    <button data-cmd="quote">
-      <span class="menu-icon-badge">💬</span>
-      <div class="menu-text-group"><span class="menu-title">Callout</span><span class="menu-desc">Highlight important text</span></div>
-    </button>
-
-    <button data-cmd="hr">
-      <span class="menu-icon-badge">➖</span>
-      <div class="menu-text-group"><span class="menu-title">Divider</span><span class="menu-desc">Visual separator</span></div>
-    </button>
-
-    <div class="divider"></div>
-    <div class="notion-menu-label">Formatting</div>
-
-    <button data-cmd="bold">
-      <span class="menu-icon-badge"><b>B</b></span>
-      <div class="menu-text-group"><span class="menu-title">Bold</span></div>
-    </button>
-
-    <button data-cmd="italic">
-      <span class="menu-icon-badge"><i>I</i></span>
-      <div class="menu-text-group"><span class="menu-title">Italic</span></div>
-    </button>
-
-    <button data-cmd="strike">
-      <span class="menu-icon-badge"><s>S</s></span>
-      <div class="menu-text-group"><span class="menu-title">Strikethrough</span></div>
-    </button>
-
-    <button data-cmd="highlight">
-      <span class="menu-icon-badge" style="background:#fef3c7;">🟡</span>
-      <div class="menu-text-group"><span class="menu-title">Highlight</span></div>
-    </button>
-  </div>
-
-  <!-- Mobile Floating Toolbar -->
-  <div class="mobile-toolbar">
-    <button class="toolbar-btn" data-cmd="menu" style="font-size: 16px; font-weight:700;">＋</button>
-    <div style="width:1px; height:16px; background:var(--border-subtle); margin:0 2px;"></div>
-    <button class="toolbar-btn" data-cmd="bold"><b>B</b></button>
-    <button class="toolbar-btn" data-cmd="italic"><i>I</i></button>
-    <button class="toolbar-btn" data-cmd="highlight">🟡</button>
-    <button class="toolbar-btn" data-cmd="todo">☑️</button>
-    <button class="toolbar-btn" data-cmd="toggle">▶</button>
-    <button class="toolbar-btn" id="btn-copy-mobile" style="font-size: 12px;">📋 Link</button>
-  </div>
-
-  <script>
+<script>
     const titleInput = document.getElementById('title');
     const editor = document.getElementById('editor');
     const commandMenu = document.getElementById('command-menu');
@@ -482,7 +10,6 @@
     let menuButtons = [];
     let selectedIndex = 0;
 
-    // Set Favicon without duplicating it in document.title
     function setFavicon(emoji) {
       currentEmoji = emoji;
       emojiBtn.textContent = emoji;
@@ -775,25 +302,78 @@
         if (lineText === '[]') { e.preventDefault(); insertTodo(text.slice(caretPos)); return; }
       }
 
-      if (e.key === 'Enter') {
-        let parentBlock = node.nodeType === 1 ? node : node.parentNode;
-        
-        const toggleTitle = parentBlock ? parentBlock.closest('.notion-toggle-title') : null;
-        if (toggleTitle) {
-          e.preventDefault();
-          const toggleDetails = toggleTitle.closest('details');
-          const toggleBody = toggleDetails.querySelector('.notion-toggle-body');
-          let firstChild = toggleBody.firstElementChild;
-          if (!firstChild) {
-            firstChild = document.createElement('div');
-            firstChild.innerHTML = '<br>';
-            toggleBody.appendChild(firstChild);
+      // MANIPOLAZIONE TOGGLE E TASTO ENTER / ARROW DOWN
+      let parentBlock = node.nodeType === 1 ? node : node.parentNode;
+      const toggleDetails = parentBlock ? parentBlock.closest('details.notion-toggle') : null;
+
+      if (toggleDetails) {
+        const toggleTitle = parentBlock.closest('.notion-toggle-title');
+        const toggleBody = toggleDetails.querySelector('.notion-toggle-body');
+
+        // FRECCIA GIÙ: Se sei alla fine del corpo del toggle, esci dal toggle
+        if (e.key === 'ArrowDown') {
+          const lastChild = toggleBody.lastElementChild;
+          if (lastChild && (lastChild.contains(node) || lastChild === node)) {
+            let nextBlock = toggleDetails.nextElementSibling;
+            if (!nextBlock) {
+              nextBlock = document.createElement('div');
+              nextBlock.innerHTML = '<br>';
+              toggleDetails.after(nextBlock);
+            }
+            setFocusAtEnd(nextBlock);
+            return;
           }
-          setFocusAtEnd(firstChild);
-          updateURL();
-          return;
         }
 
+        // TASTO ENTER DENTRO IL TOGGLE
+        if (e.key === 'Enter') {
+          // Case A: Sei sul titolo del Toggle -> Salta nel corpo del toggle
+          if (toggleTitle) {
+            e.preventDefault();
+            let firstChild = toggleBody.firstElementChild;
+            if (!firstChild) {
+              firstChild = document.createElement('div');
+              firstChild.innerHTML = '<br>';
+              toggleBody.appendChild(firstChild);
+            }
+            setFocusAtEnd(firstChild);
+            updateURL();
+            return;
+          }
+
+          // Case B: Sei dentro il corpo del Toggle
+          const currentChild = parentBlock.closest('.notion-toggle-body > *');
+          if (currentChild) {
+            const isRowEmpty = currentChild.textContent.trim() === '';
+
+            // Se la riga corrente è vuota, ESCI DAL TOGGLE
+            if (isRowEmpty) {
+              e.preventDefault();
+              
+              // Se non è l'unico elemento, rimuovi la riga vuota extra
+              if (toggleBody.children.length > 1) {
+                currentChild.remove();
+              } else {
+                currentChild.innerHTML = '<br>';
+              }
+
+              // Crea un blocco fuori dal toggle subito dopo
+              let outsideDiv = toggleDetails.nextElementSibling;
+              if (!outsideDiv || outsideDiv.tagName === 'DETAILS') {
+                outsideDiv = document.createElement('div');
+                outsideDiv.innerHTML = '<br>';
+                toggleDetails.after(outsideDiv);
+              }
+              setFocusAtEnd(outsideDiv);
+              updateURL();
+              return;
+            }
+          }
+        }
+      }
+
+      // GESTIONE CHECKLIST / TODO ITEM
+      if (e.key === 'Enter') {
         const currentTodo = parentBlock ? parentBlock.closest('.todo-item') : null;
         if (currentTodo) {
           e.preventDefault();
@@ -902,5 +482,3 @@
     titleInput.addEventListener('input', updateURL);
     loadFromURL();
   </script>
-</body>
-</html>
