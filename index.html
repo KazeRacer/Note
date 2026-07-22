@@ -31,7 +31,7 @@
       display: flex;
       justify-content: flex-end;
       gap: 6px;
-      margin-bottom: 24px;
+      margin-bottom: 28px;
     }
 
     .btn-action {
@@ -51,13 +51,14 @@
       color: var(--text-main);
     }
 
-    /* Title & Emoji Picker Area */
+    /* Title & Emoji Header Group */
     .header-group {
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 12px;
+      gap: 8px;
+      margin-bottom: 16px;
       position: relative;
+      margin-left: -8px; /* Alignment offset for hover state */
     }
 
     .emoji-btn {
@@ -70,6 +71,7 @@
       transition: background 0.12s ease;
       line-height: 1;
       user-select: none;
+      flex-shrink: 0;
     }
 
     .emoji-btn:hover { background: var(--bg-hover); }
@@ -236,7 +238,7 @@
       margin: 18px 0;
     }
 
-    /* Unified Popover Menu */
+    /* Fixed & Scaled Command Menu */
     .notion-menu {
       display: none;
       position: fixed;
@@ -246,9 +248,10 @@
       box-shadow: var(--shadow-popover);
       border-radius: 10px;
       padding: 6px;
-      width: 260px;
-      max-height: 340px;
+      width: 280px;
+      max-height: 320px;
       overflow-y: auto;
+      overflow-x: hidden;
     }
 
     .notion-menu-label {
@@ -267,12 +270,13 @@
       width: 100%;
       background: transparent;
       border: none;
-      padding: 6px 8px;
+      padding: 8px;
       font-size: 13.5px;
       color: var(--text-main);
       cursor: pointer;
       border-radius: 6px;
       text-align: left;
+      box-sizing: border-box;
     }
 
     .notion-menu button:hover,
@@ -294,9 +298,28 @@
       flex-shrink: 0;
     }
 
-    .menu-text-group { display: flex; flex-direction: column; }
-    .menu-title { font-size: 13.5px; font-weight: 500; }
-    .menu-desc { font-size: 11px; color: var(--text-muted); }
+    .menu-text-group { 
+      display: flex; 
+      flex-direction: column; 
+      overflow: hidden;
+    }
+
+    .menu-title { 
+      font-size: 13.5px; 
+      font-weight: 500; 
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .menu-desc { 
+      font-size: 11px; 
+      color: var(--text-muted); 
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     .notion-menu .divider { height: 1px; background: var(--border-subtle); margin: 4px 0; }
 
     /* Mobile Sticky Toolbar Above Keyboard */
@@ -335,6 +358,7 @@
     @media (max-width: 768px) {
       body { padding-top: 16px; padding-bottom: 140px; }
       .mobile-toolbar { display: flex; }
+      .header-group { margin-left: 0; }
       .notion-menu {
         position: fixed;
         left: 50% !important;
@@ -458,7 +482,7 @@
     let menuButtons = [];
     let selectedIndex = 0;
 
-    // Change Favicon Dynamically
+    // Set Favicon without duplicating it in document.title
     function setFavicon(emoji) {
       currentEmoji = emoji;
       emojiBtn.textContent = emoji;
@@ -677,7 +701,7 @@
       } else {
         if (rect.width === 0 && rect.height === 0) {
           top = window.innerHeight / 3;
-          left = window.innerWidth / 2 - 130;
+          left = window.innerWidth / 2 - 140;
         }
         commandMenu.style.top = `${top}px`;
         commandMenu.style.left = `${left}px`;
@@ -846,7 +870,7 @@
           editor.innerHTML = data.b || '';
           if (data.e) setFavicon(data.e);
 
-          document.title = `${currentEmoji} ${data.t || 'Note'}`;
+          document.title = data.t || 'Note';
 
           editor.querySelectorAll('.todo-checkbox').forEach(cb => {
             if (cb.hasAttribute('checked')) { cb.checked = true; }
@@ -864,7 +888,7 @@
     function updateURL() {
       const titleText = titleInput.value;
       const bodyHTML = editor.innerHTML;
-      document.title = `${currentEmoji} ${titleText || 'Note'}`;
+      document.title = titleText || 'Note';
 
       if (bodyHTML || (titleText && titleText !== 'Note') || currentEmoji !== '✏️') {
         const payload = JSON.stringify({ t: titleText, b: bodyHTML, e: currentEmoji });
