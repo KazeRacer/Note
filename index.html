@@ -24,7 +24,938 @@
     emojiPicker.querySelectorAll('button').forEach(btn => {
       btn.addEventListener('click', () => {
         setFavicon(btn.textContent);
+        emojiPicker.style.display = 'none';<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-visual">
+  <title>Note</title>
+  <link id="favicon" rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✏️</text></svg>">
+  <style>
+    * { box-sizing: border-box; }
+
+    :root {
+      --text-main: #37352f;
+      --text-muted: rgba(55, 53, 47, 0.45);
+      --bg-hover: rgba(55, 53, 47, 0.06);
+      --border-subtle: rgba(55, 53, 47, 0.09);
+      --shadow-popover: 0 12px 32px rgba(15, 15, 15, 0.12), 0 2px 6px rgba(15, 15, 15, 0.04);
+    }
+
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+      max-width: 720px; 
+      margin: 0 auto; 
+      padding: 32px 20px 120px 20px; 
+      color: var(--text-main);
+      background-color: #ffffff;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Top Bar */
+    .top-bar {
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+      margin-bottom: 28px;
+    }
+
+    .btn-action {
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 12px;
+      font-weight: 500;
+      color: rgba(55, 53, 47, 0.65);
+      cursor: pointer;
+      transition: all 0.12s ease;
+    }
+
+    .btn-action:hover {
+      background: var(--bg-hover);
+      color: var(--text-main);
+    }
+
+    /* Title & Emoji Header Group */
+    .header-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      position: relative;
+      margin-left: -8px;
+    }
+
+    .emoji-btn {
+      font-size: 32px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 8px;
+      transition: background 0.12s ease;
+      line-height: 1;
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    .emoji-btn:hover { background: var(--bg-hover); }
+
+    .emoji-picker {
+      display: none;
+      position: absolute;
+      top: 48px;
+      left: 0;
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-popover);
+      border-radius: 10px;
+      padding: 8px;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 4px;
+      z-index: 3000;
+      width: 220px;
+    }
+
+    .emoji-picker button {
+      background: transparent;
+      border: none;
+      font-size: 20px;
+      padding: 6px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .emoji-picker button:hover { background: var(--bg-hover); }
+
+    .title-input { 
+      font-size: 36px; 
+      font-weight: 700; 
+      color: var(--text-main);
+      letter-spacing: -0.025em;
+      line-height: 1.15;
+      margin: 0;
+      padding: 0;
+      border: none; 
+      outline: none;
+      background: transparent;
+      width: 100%;
+    }
+
+    .title-input::placeholder { color: rgba(55, 53, 47, 0.2); }
+
+    /* Editor Main Area */
+    .editor { 
+      width: 100%; 
+      min-height: 60vh; 
+      font-size: 16px; 
+      line-height: 1.6; 
+      outline: none;
+      border: none;
+      color: var(--text-main);
+    }
+
+    .editor:empty:before {
+      content: attr(data-placeholder);
+      color: rgba(55, 53, 47, 0.3);
+      pointer-events: none;
+    }
+
+    .editor h1 { font-size: 28px; font-weight: 700; margin: 24px 0 6px 0; letter-spacing: -0.02em; }
+    .editor h2 { font-size: 21px; font-weight: 600; margin: 18px 0 4px 0; letter-spacing: -0.015em; }
+
+    /* TOGGLE BLOCK */
+    .editor details.notion-toggle { margin: 4px 0; }
+
+    .editor summary.notion-toggle-header {
+      cursor: pointer;
+      list-style: none;
+      outline: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 2px 0;
+      user-select: none;
+    }
+
+    .editor summary.notion-toggle-header::-webkit-details-marker { display: none; }
+
+    .editor summary.notion-toggle-header::before {
+      content: "▶";
+      font-size: 9px;
+      color: var(--text-muted);
+      transition: transform 0.15s ease;
+      width: 14px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .editor details.notion-toggle[open] > summary.notion-toggle-header::before {
+      transform: rotate(90deg);
+    }
+
+    .editor .notion-toggle-title {
+      flex-grow: 1;
+      outline: none;
+      min-height: 24px;
+    }
+
+    .editor .notion-toggle-body {
+      padding-left: 18px;
+      border-left: 2px solid rgba(55, 53, 47, 0.1);
+      margin-left: 6px;
+      margin-top: 4px;
+      margin-bottom: 6px;
+    }
+
+    .editor .notion-toggle-body .todo-item,
+    .editor .notion-toggle-body ul,
+    .editor .notion-toggle-body ol { margin-left: 0 !important; }
+
+    .editor .notion-toggle-body ul,
+    .editor .notion-toggle-body ol { padding-left: 18px; }
+
+    /* Callout */
+    .editor blockquote {
+      margin: 10px 0;
+      padding: 10px 14px;
+      border-left: 3px solid #37352f;
+      background: rgba(55, 53, 47, 0.035);
+      border-radius: 0 6px 6px 0;
+    }
+
+    mark.notion-highlight {
+      background-color: #fef3c7;
+      color: inherit;
+      padding: 1px 3px;
+      border-radius: 3px;
+    }
+
+    /* Lists */
+    .editor ul, .editor ol { padding-left: 20px; margin: 4px 0; }
+    .editor li { margin: 2px 0; }
+
+    /* To-Do Checklist */
+    .todo-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin: 3px 0;
+    }
+    .todo-checkbox {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: #2eaadc;
+      flex-shrink: 0;
+      margin-top: 5px;
+    }
+    .todo-text { flex-grow: 1; outline: none; }
+    .todo-item.completed .todo-text {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    /* Divider */
+    hr {
+      border: none;
+      border-top: 1px solid var(--border-subtle);
+      margin: 18px 0;
+    }
+
+    /* Command Menu */
+    .notion-menu {
+      display: none;
+      position: fixed;
+      z-index: 2000;
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-popover);
+      border-radius: 10px;
+      padding: 6px;
+      width: 280px;
+      max-height: 320px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .notion-menu-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      padding: 6px 8px 4px 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .notion-menu button {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      background: transparent;
+      border: none;
+      padding: 8px;
+      font-size: 13.5px;
+      color: var(--text-main);
+      cursor: pointer;
+      border-radius: 6px;
+      text-align: left;
+      box-sizing: border-box;
+    }
+
+    .notion-menu button:hover,
+    .notion-menu button.selected {
+      background: var(--bg-hover);
+    }
+
+    .menu-icon-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      background: rgba(55, 53, 47, 0.05);
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(55, 53, 47, 0.7);
+      flex-shrink: 0;
+    }
+
+    .menu-text-group { 
+      display: flex; 
+      flex-direction: column; 
+      overflow: hidden;
+    }
+
+    .menu-title { 
+      font-size: 13.5px; 
+      font-weight: 500; 
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .menu-desc { 
+      font-size: 11px; 
+      color: var(--text-muted); 
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .notion-menu .divider { height: 1px; background: var(--border-subtle); margin: 4px 0; }
+
+    /* Mobile Sticky Toolbar */
+    .mobile-toolbar {
+      display: none;
+      position: fixed;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-popover);
+      border-radius: 30px;
+      padding: 4px 10px;
+      gap: 2px;
+      z-index: 1500;
+      align-items: center;
+    }
+
+    .toolbar-btn {
+      background: transparent;
+      border: none;
+      padding: 6px 10px;
+      font-size: 14px;
+      color: var(--text-main);
+      cursor: pointer;
+      border-radius: 20px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .toolbar-btn:active { background: var(--bg-hover); }
+
+    @media (max-width: 768px) {
+      body { padding-top: 16px; padding-bottom: 140px; }
+      .mobile-toolbar { display: flex; }
+      .header-group { margin-left: 0; }
+      .notion-menu {
+        position: fixed;
+        left: 50% !important;
+        transform: translateX(-50%);
+        bottom: 70px !important;
+        top: auto !important;
+        width: 90vw;
+        max-width: 320px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <button class="btn-action" id="btn-copy">📋 Copy Link</button>
+    <button class="btn-action" id="btn-new">➕ New Note</button>
+  </div>
+
+  <div class="header-group">
+    <button id="emoji-btn" class="emoji-btn" title="Change Icon">✏️</button>
+    <div id="emoji-picker" class="emoji-picker">
+      <button>✏️</button><button>📝</button><button>💡</button><button>📌</button><button>⭐</button><button>🔥</button>
+      <button>🚀</button><button>🎯</button><button>📚</button><button>💻</button><button>🛠️</button><button>🎨</button>
+      <button>✅</button><button>🧠</button><button>📊</button><button>💰</button><button>🌐</button><button>☕</button>
+    </div>
+    <input type="text" id="title" class="title-input" placeholder="Untitled" value="Note">
+  </div>
+
+  <div id="editor" class="editor" contenteditable="true" data-placeholder="Type '/' for commands..."></div>
+
+  <!-- Command Menu -->
+  <div id="command-menu" class="notion-menu">
+    <!-- SEZIONE IN CIMA: HEADING -->
+    <div class="notion-menu-label">Intestazioni</div>
+    <button data-cmd="h1">
+      <span class="menu-icon-badge">H1</span>
+      <div class="menu-text-group"><span class="menu-title">Heading 1</span><span class="menu-desc">Titolo principale</span></div>
+    </button>
+    <button data-cmd="h2">
+      <span class="menu-icon-badge">H2</span>
+      <div class="menu-text-group"><span class="menu-title">Heading 2</span><span class="menu-desc">Sottotitolo</span></div>
+    </button>
+
+    <div class="divider"></div>
+
+    <!-- SEZIONE CENTRALE: BLOCCHI -->
+    <div class="notion-menu-label">Blocchi</div>
+    <button data-cmd="bullet">
+      <span class="menu-icon-badge">•</span>
+      <div class="menu-text-group"><span class="menu-title">Bulleted List</span><span class="menu-desc">Elenco puntato</span></div>
+    </button>
+    <button data-cmd="number">
+      <span class="menu-icon-badge">1.</span>
+      <div class="menu-text-group"><span class="menu-title">Numbered List</span><span class="menu-desc">Elenco numerato</span></div>
+    </button>
+    <button data-cmd="todo">
+      <span class="menu-icon-badge">☑️</span>
+      <div class="menu-text-group"><span class="menu-title">To-do List</span><span class="menu-desc">Lista di controllo</span></div>
+    </button>
+    <button data-cmd="toggle">
+      <span class="menu-icon-badge">▶</span>
+      <div class="menu-text-group"><span class="menu-title">Toggle List</span><span class="menu-desc">Testo collassabile</span></div>
+    </button>
+    <button data-cmd="quote">
+      <span class="menu-icon-badge">💬</span>
+      <div class="menu-text-group"><span class="menu-title">Callout</span><span class="menu-desc">Citazione/Evidenziato</span></div>
+    </button>
+    <button data-cmd="hr">
+      <span class="menu-icon-badge">➖</span>
+      <div class="menu-text-group"><span class="menu-title">Divider</span><span class="menu-desc">Separatore orizzontale</span></div>
+    </button>
+
+    <div class="divider"></div>
+
+    <!-- SEZIONE IN FONDO: FORMATTAZIONE -->
+    <div class="notion-menu-label">Formattazione</div>
+    <button data-cmd="bold">
+      <span class="menu-icon-badge"><b>B</b></span>
+      <div class="menu-text-group"><span class="menu-title">Bold</span><span class="menu-desc">Grassetto</span></div>
+    </button>
+    <button data-cmd="italic">
+      <span class="menu-icon-badge"><i>I</i></span>
+      <div class="menu-text-group"><span class="menu-title">Italic</span><span class="menu-desc">Corsivo</span></div>
+    </button>
+    <button data-cmd="strike">
+      <span class="menu-icon-badge"><s>S</s></span>
+      <div class="menu-text-group"><span class="menu-title">Strikethrough</span><span class="menu-desc">Barrato</span></div>
+    </button>
+    <button data-cmd="highlight">
+      <span class="menu-icon-badge" style="background:#fef3c7;">🟡</span>
+      <div class="menu-text-group"><span class="menu-title">Highlight</span><span class="menu-desc">Evidenzia testo</span></div>
+    </button>
+  </div>
+
+  <!-- Mobile Floating Toolbar -->
+  <div class="mobile-toolbar">
+    <button class="toolbar-btn" data-cmd="menu" style="font-size: 16px; font-weight:700;">＋</button>
+    <div style="width:1px; height:16px; background:var(--border-subtle); margin:0 2px;"></div>
+    <button class="toolbar-btn" data-cmd="bold"><b>B</b></button>
+    <button class="toolbar-btn" data-cmd="italic"><i>I</i></button>
+    <button class="toolbar-btn" data-cmd="highlight">🟡</button>
+    <button class="toolbar-btn" data-cmd="todo">☑️</button>
+    <button class="toolbar-btn" data-cmd="toggle">▶</button>
+    <button class="toolbar-btn" id="btn-copy-mobile" style="font-size: 12px;">📋 Link</button>
+  </div>
+
+  <script>
+    const titleInput = document.getElementById('title');
+    const editor = document.getElementById('editor');
+    const commandMenu = document.getElementById('command-menu');
+    const emojiBtn = document.getElementById('emoji-btn');
+    const emojiPicker = document.getElementById('emoji-picker');
+    const favicon = document.getElementById('favicon');
+
+    let currentEmoji = '✏️';
+    let menuButtons = [];
+    let selectedIndex = 0;
+
+    function setFavicon(emoji) {
+      currentEmoji = emoji;
+      emojiBtn.textContent = emoji;
+      favicon.href = `data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>${emoji}</text></svg>`;
+    }
+
+    emojiBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      emojiPicker.style.display = emojiPicker.style.display === 'grid' ? 'none' : 'grid';
+    });
+
+    emojiPicker.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        setFavicon(btn.textContent);
         emojiPicker.style.display = 'none';
+        updateURL();
+      });
+    });
+
+    function formatLineBlock(tag, textToKeep) {
+      const selection = window.getSelection();
+      if (!selection.rangeCount) return;
+      const range = selection.getRangeAt(0);
+      let node = range.startContainer;
+      if (node.nodeType === 3) node = node.parentNode;
+
+      const element = document.createElement(tag);
+      if (tag === 'ul' || tag === 'ol') {
+        element.innerHTML = `<li>${textToKeep || '<br>'}</li>`;
+      } else {
+        element.innerHTML = textToKeep || '<br>';
+      }
+
+      let blockToReplace = node.closest('div, p, h1, h2, blockquote');
+      if (blockToReplace && blockToReplace !== editor) {
+        blockToReplace.replaceWith(element);
+      } else {
+        range.insertNode(element);
+      }
+
+      const target = element.querySelector('li') || element;
+      setFocusAtEnd(target);
+      updateURL();
+    }
+
+    function insertToggleBlock(textToKeep = '') {
+      const selection = window.getSelection();
+      if (!selection.rangeCount) return;
+      const range = selection.getRangeAt(0);
+      let node = range.startContainer;
+      
+      let targetNode = node.nodeType === 3 ? node.parentNode : node;
+      let blockToReplace = targetNode.closest('div, p, h1, h2, blockquote');
+
+      const details = document.createElement('details');
+      details.className = 'notion-toggle';
+      details.open = true;
+
+      const summary = document.createElement('summary');
+      summary.className = 'notion-toggle-header';
+
+      const titleSpan = document.createElement('span');
+      titleSpan.className = 'notion-toggle-title';
+      titleSpan.contentEditable = 'true';
+      titleSpan.innerHTML = textToKeep || '<br>';
+
+      summary.appendChild(titleSpan);
+
+      const body = document.createElement('div');
+      body.className = 'notion-toggle-body';
+      body.innerHTML = '<div><br></div>';
+
+      details.appendChild(summary);
+      details.appendChild(body);
+
+      if (blockToReplace && blockToReplace !== editor) {
+        blockToReplace.replaceWith(details);
+      } else {
+        range.insertNode(details);
+      }
+
+      setFocusAtEnd(titleSpan);
+      updateURL();
+    }
+
+    function insertDivider() {
+      const selection = window.getSelection();
+      if (!selection.rangeCount) return;
+      const range = selection.getRangeAt(0);
+      let node = range.startContainer;
+      if (node.nodeType === 3) node = node.parentNode;
+
+      const hr = document.createElement('hr');
+      const nextDiv = document.createElement('div');
+      nextDiv.innerHTML = '<br>';
+
+      let blockToReplace = node.closest('div, p');
+      if (blockToReplace && blockToReplace !== editor) {
+        blockToReplace.replaceWith(hr);
+        hr.after(nextDiv);
+      } else {
+        range.insertNode(hr);
+        hr.after(nextDiv);
+      }
+
+      setFocusAtEnd(nextDiv);
+      updateURL();
+    }
+
+    function toggleHighlight() {
+      const selection = window.getSelection();
+      if (!selection.rangeCount || selection.isCollapsed) return;
+
+      const range = selection.getRangeAt(0);
+      const parentMark = selection.anchorNode.parentNode.closest('mark.notion-highlight');
+
+      if (parentMark) {
+        const text = document.createTextNode(parentMark.textContent);
+        parentMark.replaceWith(text);
+      } else {
+        const mark = document.createElement('mark');
+        mark.className = 'notion-highlight';
+        range.surroundContents(mark);
+      }
+      updateURL();
+    }
+
+    function insertTodo(remainingText = '', targetContainer = null) {
+      const selection = window.getSelection();
+      if (!selection.rangeCount && !targetContainer) return;
+
+      const todoDiv = document.createElement('div');
+      todoDiv.className = 'todo-item';
+      todoDiv.innerHTML = `<input type="checkbox" class="todo-checkbox" contenteditable="false"><span class="todo-text" contenteditable="true">${remainingText || '<br>'}</span>`;
+
+      if (targetContainer) {
+        targetContainer.after(todoDiv);
+      } else {
+        const range = selection.getRangeAt(0);
+        let node = range.startContainer;
+        if (node.nodeType === 3) node = node.parentNode;
+        let blockToReplace = node.closest('div, p');
+
+        if (blockToReplace && blockToReplace !== editor && !blockToReplace.classList.contains('notion-toggle-body')) {
+          blockToReplace.replaceWith(todoDiv);
+        } else {
+          range.insertNode(todoDiv);
+        }
+      }
+
+      const textSpan = todoDiv.querySelector('.todo-text');
+      setFocusAtEnd(textSpan);
+      updateURL();
+    }
+
+    function setFocusAtEnd(el) {
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+
+    function cleanSlashText() {
+      const selection = window.getSelection();
+      if (!selection.rangeCount) return;
+      const range = selection.getRangeAt(0);
+      let node = range.startContainer;
+      if (node.nodeType === 3 && node.textContent.includes('/')) {
+        node.textContent = node.textContent.replace('/', '');
+      }
+    }
+
+    function executeCommand(cmd) {
+      cleanSlashText();
+      if (cmd === 'h1') formatLineBlock('h1', '');
+      else if (cmd === 'h2') formatLineBlock('h2', '');
+      else if (cmd === 'toggle') insertToggleBlock('');
+      else if (cmd === 'bullet') formatLineBlock('ul', '');
+      else if (cmd === 'number') formatLineBlock('ol', '');
+      else if (cmd === 'bold') { document.execCommand('bold'); updateURL(); }
+      else if (cmd === 'italic') { document.execCommand('italic'); updateURL(); }
+      else if (cmd === 'strike') { document.execCommand('strikeThrough'); updateURL(); }
+      else if (cmd === 'highlight') toggleHighlight();
+      else if (cmd === 'todo') insertTodo('');
+      else if (cmd === 'quote') formatLineBlock('blockquote', '');
+      else if (cmd === 'hr') insertDivider();
+      else if (cmd === 'menu') showMenuAtCaret();
+      
+      hideMenu();
+    }
+
+    function updateMenuSelection() {
+      menuButtons.forEach((btn, idx) => {
+        if (idx === selectedIndex) {
+          btn.classList.add('selected');
+          btn.scrollIntoView({ block: 'nearest' });
+        } else {
+          btn.classList.remove('selected');
+        }
+      });
+    }
+
+    function showMenuAtCaret() {
+      const selection = window.getSelection();
+      if (!selection.rangeCount) return;
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+
+      let top = rect.bottom + window.scrollY + 6;
+      let left = rect.left + window.scrollX;
+
+      if (window.innerWidth <= 768) {
+        commandMenu.style.display = 'block';
+      } else {
+        if (rect.width === 0 && rect.height === 0) {
+          top = window.innerHeight / 3;
+          left = window.innerWidth / 2 - 140;
+        }
+        commandMenu.style.top = `${top}px`;
+        commandMenu.style.left = `${left}px`;
+        commandMenu.style.display = 'block';
+      }
+
+      menuButtons = Array.from(commandMenu.querySelectorAll('button[data-cmd]'));
+      selectedIndex = 0;
+      updateMenuSelection();
+    }
+
+    function hideMenu() { commandMenu.style.display = 'none'; }
+    function isMenuVisible() { return commandMenu.style.display === 'block'; }
+
+    editor.addEventListener('input', (e) => {
+      const selection = window.getSelection();
+      if (!selection.rangeCount) return;
+      const node = selection.getRangeAt(0).startContainer;
+      const text = node.textContent || '';
+      
+      if (text.endsWith('/')) {
+        showMenuAtCaret();
+      }
+      updateURL();
+    });
+
+    editor.addEventListener('keydown', (e) => {
+      // NAVIGAZIONE MENU A TASTIERA (SENZA LOOP)
+      if (isMenuVisible()) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (selectedIndex < menuButtons.length - 1) {
+            selectedIndex++;
+            updateMenuSelection();
+          }
+          return;
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (selectedIndex > 0) {
+            selectedIndex--;
+            updateMenuSelection();
+          }
+          return;
+        }
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (menuButtons[selectedIndex]) {
+            const cmd = menuButtons[selectedIndex].getAttribute('data-cmd');
+            executeCommand(cmd);
+          }
+          return;
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          hideMenu();
+          return;
+        }
+      }
+
+      const selection = window.getSelection();
+      if (!selection.rangeCount) return;
+      const range = selection.getRangeAt(0);
+      const node = range.startContainer;
+      const text = node.textContent || '';
+      const caretPos = range.startOffset;
+      const lineText = text.slice(0, caretPos);
+
+      // SCORCIATOIE DA TASTIERA
+      if (e.key === ' ') {
+        if (lineText === '#') { e.preventDefault(); formatLineBlock('h1', text.slice(caretPos)); return; }
+        if (lineText === '##') { e.preventDefault(); formatLineBlock('h2', text.slice(caretPos)); return; }
+        if (lineText === '>') { e.preventDefault(); insertToggleBlock(text.slice(caretPos)); return; }
+        if (lineText === '"') { e.preventDefault(); formatLineBlock('blockquote', text.slice(caretPos)); return; }
+        if (lineText === '-' || lineText === '*') { e.preventDefault(); formatLineBlock('ul', text.slice(caretPos)); return; }
+        if (lineText === '1.') { e.preventDefault(); formatLineBlock('ol', text.slice(caretPos)); return; }
+        if (lineText === '[]') { e.preventDefault(); insertTodo(text.slice(caretPos)); return; }
+      }
+
+      let parentBlock = node.nodeType === 1 ? node : node.parentNode;
+
+      // GESTIONE INVIO E TESTO COLLASSABILE (TOGGLE)
+      if (e.key === 'Enter') {
+        const toggleDetails = parentBlock ? parentBlock.closest('details.notion-toggle') : null;
+
+        if (toggleDetails) {
+          const toggleTitle = parentBlock.closest('.notion-toggle-title');
+          const toggleBody = toggleDetails.querySelector('.notion-toggle-body');
+
+          if (toggleTitle) {
+            e.preventDefault();
+            let firstChild = toggleBody.firstElementChild;
+            if (!firstChild) {
+              firstChild = document.createElement('div');
+              firstChild.innerHTML = '<br>';
+              toggleBody.appendChild(firstChild);
+            }
+            setFocusAtEnd(firstChild);
+            updateURL();
+            return;
+          }
+
+          const activeLine = parentBlock.closest('.notion-toggle-body > *') || parentBlock;
+          const isTextEmpty = activeLine.textContent.replace(/\u200B/g, '').trim() === '';
+
+          if (isTextEmpty) {
+            e.preventDefault();
+
+            if (toggleBody.children.length > 1) {
+              activeLine.remove();
+            }
+
+            const newParagraph = document.createElement('div');
+            newParagraph.innerHTML = '<br>';
+            toggleDetails.after(newParagraph);
+
+            setFocusAtEnd(newParagraph);
+            updateURL();
+            return;
+          }
+        }
+
+        // GESTIONE CHECKLIST / TODO ITEM
+        const currentTodo = parentBlock ? parentBlock.closest('.todo-item') : null;
+        if (currentTodo) {
+          e.preventDefault();
+          const todoText = currentTodo.querySelector('.todo-text');
+          const textContent = todoText ? todoText.textContent.trim() : '';
+
+          if (textContent === '') {
+            const emptyDiv = document.createElement('div');
+            emptyDiv.innerHTML = '<br>';
+            currentTodo.after(emptyDiv);
+            currentTodo.remove();
+            setFocusAtEnd(emptyDiv);
+          } else {
+            insertTodo('', currentTodo);
+          }
+          updateURL();
+          return;
+        }
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!commandMenu.contains(e.target) && !e.target.closest('.mobile-toolbar')) {
+        hideMenu();
+      }
+      if (!emojiPicker.contains(e.target) && e.target !== emojiBtn) {
+        emojiPicker.style.display = 'none';
+      }
+    });
+
+    document.querySelectorAll('[data-cmd]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const cmd = e.currentTarget.getAttribute('data-cmd');
+        executeCommand(cmd);
+      });
+    });
+
+    editor.addEventListener('change', (e) => {
+      if (e.target.classList.contains('todo-checkbox')) {
+        const todoItem = e.target.closest('.todo-item');
+        if (e.target.checked) {
+          todoItem.classList.add('completed');
+          e.target.setAttribute('checked', 'checked');
+        } else {
+          todoItem.classList.remove('completed');
+          e.target.removeAttribute('checked');
+        }
+        updateURL();
+      }
+    });
+
+    function copyLinkHandler(btnElement) {
+      navigator.clipboard.writeText(window.location.href).then(() => {
+        const origText = btnElement.textContent;
+        btnElement.textContent = '✅ Copied!';
+        setTimeout(() => btnElement.textContent = origText, 1500);
+      });
+    }
+
+    document.getElementById('btn-copy').addEventListener('click', (e) => copyLinkHandler(e.target));
+    document.getElementById('btn-copy-mobile').addEventListener('click', (e) => copyLinkHandler(e.target));
+
+    document.getElementById('btn-new').addEventListener('click', () => {
+      window.open(window.location.pathname, '_blank');
+    });
+
+    function loadFromURL() {
+      const hash = window.location.hash.substring(1);
+      if (hash) {
+        try {
+          const decoded = decodeURIComponent(escape(atob(hash)));
+          const data = JSON.parse(decoded);
+          titleInput.value = data.t || 'Note';
+          editor.innerHTML = data.b || '';
+          if (data.e) setFavicon(data.e);
+
+          document.title = data.t || 'Note';
+
+          editor.querySelectorAll('.todo-checkbox').forEach(cb => {
+            if (cb.hasAttribute('checked')) { cb.checked = true; }
+          });
+        } catch (e) {
+          try {
+            editor.innerHTML = decodeURIComponent(escape(atob(hash)));
+          } catch(err) {
+            editor.innerText = decodeURIComponent(hash);
+          }
+        }
+      }
+    }
+
+    function updateURL() {
+      const titleText = titleInput.value;
+      const bodyHTML = editor.innerHTML;
+      document.title = titleText || 'Note';
+
+      if (bodyHTML || (titleText && titleText !== 'Note') || currentEmoji !== '✏️') {
+        const payload = JSON.stringify({ t: titleText, b: bodyHTML, e: currentEmoji });
+        const encoded = btoa(unescape(encodeURIComponent(payload)));
+        history.replaceState(null, null, '#' + encoded);
+      } else {
+        history.replaceState(null, null, window.location.pathname);
+      }
+    }
+
+    titleInput.addEventListener('input', updateURL);
+    loadFromURL();
+  </script>
+</body>
+</html>
         updateURL();
       });
     });
