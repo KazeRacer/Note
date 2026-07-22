@@ -6,30 +6,29 @@
   <title>Note</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✏️</text></svg>">
   <style>
-    /* 1. Reset e Colori Sfondo/Testo Stile Notion */
+    /* Reset & Tipografia Minimalista Notion */
     * {
       box-sizing: border-box;
     }
 
     body { 
-      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol"; 
-      max-width: 900px; 
-      margin: 40px auto; 
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; 
+      max-width: 800px; 
+      margin: 60px auto; 
       padding: 0 24px; 
-      color: #37352f; /* Colore testo ufficiale Notion */
+      color: #37352f;
       background-color: #ffffff;
       -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
     }
 
-    /* 2. Titolo Nota */
+    /* Titolo Nota in Cima */
     .title-input { 
       font-size: 34px; 
       font-weight: 700; 
       border: none; 
       outline: none; 
       width: 100%; 
-      margin-bottom: 16px; 
+      margin-bottom: 20px; 
       padding: 0;
       color: #37352f;
       font-family: inherit;
@@ -41,14 +40,15 @@
       color: rgba(55, 53, 47, 0.25); 
     }
 
-    /* 3. Editor & Interlinea */
+    /* Editor Senza Contorni */
     .editor { 
       width: 100%; 
-      min-height: 75vh; 
+      min-height: 70vh; 
       padding: 0; 
       font-size: 16px; 
-      line-height: 1.5; /* Interlinea esatta di Notion */
+      line-height: 1.5; 
       outline: none;
+      border: none;
       overflow-y: auto;
       color: #37352f;
     }
@@ -57,25 +57,25 @@
       color: rgba(55, 53, 47, 0.35);
     }
 
-    /* 4. Headings (# e ##) */
+    /* Headings: H1 identico al Titolo Principale (34px) */
     .editor h1 {
-      font-size: 26px;
+      font-size: 34px;
       font-weight: 700;
-      margin: 28px 0 4px 0;
+      margin: 32px 0 8px 0;
+      color: #37352f;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+    .editor h2 {
+      font-size: 24px;
+      font-weight: 600;
+      margin: 24px 0 6px 0;
       color: #37352f;
       letter-spacing: -0.015em;
       line-height: 1.3;
     }
-    .editor h2 {
-      font-size: 20px;
-      font-weight: 600;
-      margin: 20px 0 3px 0;
-      color: #37352f;
-      letter-spacing: -0.01em;
-      line-height: 1.35;
-    }
 
-    /* 5. Elenchi Puntati e Numerati */
+    /* Elenchi */
     .editor ul, .editor ol {
       padding-left: 24px;
       margin: 4px 0;
@@ -85,18 +85,18 @@
       line-height: 1.5;
     }
 
-    /* 6. Checklist To-Do */
+    /* Checklist To-Do */
     .todo-item {
       display: flex;
       align-items: flex-start;
       gap: 8px;
-      margin: 3px 0;
+      margin: 4px 0;
     }
     .todo-checkbox {
       width: 16px;
       height: 16px;
       cursor: pointer;
-      accent-color: #2eaadc; /* Azzurro Notion */
+      accent-color: #2eaadc;
       flex-shrink: 0;
       margin-top: 4px;
     }
@@ -110,11 +110,11 @@
       color: rgba(55, 53, 47, 0.4);
     }
 
-    /* 7. Linea divisoria --- */
+    /* Linea divisoria --- */
     hr {
       border: none;
       border-top: 1px solid rgba(55, 53, 47, 0.16);
-      margin: 16px 0;
+      margin: 20px 0;
     }
   </style>
 </head>
@@ -126,7 +126,7 @@
     const titleInput = document.getElementById('title');
     const editor = document.getElementById('editor');
 
-    // Funzione helper per isolare il nodo corrente
+    // Helper per creare blocchi puliti
     function formatLineBlock(tag, textToKeep) {
       const selection = window.getSelection();
       if (!selection.rangeCount) return;
@@ -158,7 +158,7 @@
       selection.addRange(newRange);
     }
 
-    // Gestione trigger da tastiera
+    // Eventi da tastiera
     editor.addEventListener('keydown', (e) => {
       const selection = window.getSelection();
       if (!selection.rangeCount) return;
@@ -168,7 +168,7 @@
       const caretPos = range.startOffset;
       const lineText = text.slice(0, caretPos);
 
-      // SPAZIO: Trigger Formattazione
+      // Trigger Spazio
       if (e.key === ' ') {
         if (lineText === '#') {
           e.preventDefault();
@@ -223,7 +223,7 @@
         }
       }
 
-      // INVIO: Linea divisoria, A Capo Headings e To-Do
+      // Trigger Invio
       if (e.key === 'Enter') {
         if (lineText.trim() === '---') {
           e.preventDefault();
