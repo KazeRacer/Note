@@ -37,20 +37,62 @@
       border-radius: 8px; 
       box-sizing: border-box; 
       line-height: 1.6; 
-      font-family: inherit; 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace, sans-serif; 
       resize: vertical;
     }
   </style>
 </head>
 <body>
   <input type="text" id="title" class="title-input" placeholder="Titolo nota..." value="Note">
-  <textarea id="editor" placeholder="Scrivi qui..."></textarea>
+  <textarea id="editor" placeholder="Scrivi qui... (Usa Ctrl+B per Bold, Ctrl+I per Italic, Ctrl+Shift+X per Strikethrough)"></textarea>
 
   <script>
     const titleInput = document.getElementById('title');
     const editor = document.getElementById('editor');
 
-    // 1. Carica titolo e testo dall'URL
+    // 1. Funzione per applicare la formattazione al testo selezionato
+    function applyFormatting(wrapper) {
+      const start = editor.selectionStart;
+      const end = editor.selectionEnd;
+      const text = editor.value;
+      const selectedText = text.substring(start, end);
+
+      const before = text.substring(0, start);
+      const after = text.substring(end);
+
+      editor.value = before + wrapper + selectedText + wrapper + after;
+
+      // Riposiziona il cursore o la selezione
+      if (start === end) {
+        editor.selectionStart = editor.selectionEnd = start + wrapper.length;
+      } else {
+        editor.selectionStart = start;
+        editor.selectionEnd = end + (wrapper.length * 2);
+      }
+
+      editor.focus();
+      updateURL();
+    }
+
+    // 2. Gestione Shortcut da Tastiera
+    editor.addEventListener('keydown', (e) => {
+      const isCmdOrCtrl = e.ctrlKey || e.metaKey;
+
+      if (isCmdOrCtrl) {
+        if (e.key.toLowerCase() === 'b') {
+          e.preventDefault();
+          applyFormatting('**');
+        } else if (e.key.toLowerCase() === 'i') {
+          e.preventDefault();
+          applyFormatting('*');
+        } else if (e.key.toLowerCase() === 'x' && e.shiftKey) {
+          e.preventDefault();
+          applyFormatting('~~');
+        }
+      }
+    });
+
+    // 3. Carica titolo e testo dall'URL
     function loadFromURL() {
       const hash = window.location.hash.substring(1);
       if (hash) {
@@ -61,7 +103,6 @@
           editor.value = data.b || '';
           document.title = data.t || 'Note';
         } catch (e) {
-          // Fallback per vecchi URL con solo testo grezzo
           try {
             editor.value = decodeURIComponent(escape(atob(hash)));
           } catch(err) {
@@ -71,7 +112,7 @@
       }
     }
 
-    // 2. Salva titolo e testo nell'URL in tempo reale
+    // 4. Salva titolo e testo nell'URL in tempo reale
     function updateURL() {
       const titleText = titleInput.value;
       const bodyText = editor.value;
