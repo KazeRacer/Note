@@ -44,12 +44,21 @@
       color: #aaa;
     }
 
-    /* Stili per la Checklist To-Do */
+    /* Elenchi Puntati e Numerati */
+    .editor ul, .editor ol {
+      padding-left: 25px;
+      margin: 8px 0;
+    }
+    .editor li {
+      margin: 4px 0;
+    }
+
+    /* Stili per Checklist To-Do */
     .todo-item {
       display: flex;
       align-items: center;
       gap: 10px;
-      margin: 4px 0;
+      margin: 6px 0;
     }
     .todo-checkbox {
       width: 18px;
@@ -71,33 +80,50 @@
     hr {
       border: none;
       border-top: 1px solid #e0e0e0;
-      margin: 16px 0;
+      margin: 18px 0;
     }
   </style>
 </head>
 <body>
   <input type="text" id="title" class="title-input" placeholder="Titolo nota..." value="Note">
-  <div id="editor" class="editor" contenteditable="true" data-placeholder="Scrivi qui... (- per elenchi, [] per to-do, --- per separatore)"></div>
+  <div id="editor" class="editor" contenteditable="true" data-placeholder="Scrivi qui... (- per pallini, 1. per numerati, [] per to-do, --- + Invio per linea)"></div>
 
   <script>
     const titleInput = document.getElementById('title');
     const editor = document.getElementById('editor');
 
-    // Gestione tastiera (Trattini, To-Do, Linea Divisoria)
+    // Gestione trigger da tastiera
     editor.addEventListener('keydown', (e) => {
       const selection = window.getSelection();
       if (!selection.rangeCount) return;
       const range = selection.getRangeAt(0);
       const node = range.startContainer;
-      
-      // 1. Pressione di SPAZIO per convertire i trigger ([], ---)
-      if (e.key === ' ') {
-        const text = node.textContent || '';
-        const caretPos = range.startOffset;
-        const textBeforeCaret = text.slice(0, caretPos);
+      const text = node.textContent || '';
+      const caretPos = range.startOffset;
+      const lineText = text.slice(0, caretPos);
 
-        // Trigger Checkbox: [] + Spazio
-        if (textBeforeCaret === '[]') {
+      // --- 1. SPAZIO: Trasformazione in Elenchi e To-Do ---
+      if (e.key === ' ') {
+        // Trigger Elenco Puntato con Pallino (- o *)
+        if (lineText === '-' || lineText === '*') {
+          e.preventDefault();
+          node.textContent = text.slice(caretPos);
+          document.execCommand('insertUnorderedList', false, null);
+          updateURL();
+          return;
+        }
+
+        // Trigger Elenco Numerato (1.)
+        if (lineText === '1.') {
+          e.preventDefault();
+          node.textContent = text.slice(caretPos);
+          document.execCommand('insertOrderedList', false, null);
+          updateURL();
+          return;
+        }
+
+        // Trigger To-Do ([] + Spazio)
+        if (lineText === '[]') {
           e.preventDefault();
           node.textContent = text.slice(caretPos);
           
@@ -116,65 +142,69 @@
           updateURL();
           return;
         }
+      }
 
-        // Trigger Separatore: --- + Spazio
-        if (textBeforeCaret === '---') {
+      // --- 2. INVIO: Linea divisoria e Continuazione To-Do ---
+      if (e.key === 'Enter') {
+        // Trigger Separatore (--- + Invio)
+        if (lineText.trim() === '---') {
           e.preventDefault();
-          node.textContent = text.slice(caretPos);
-          const hr = document.createElement('hr');
-          const emptyDiv = document.createElement('div');
-          emptyDiv.innerHTML = '<br>';
           
-          range.insertNode(emptyDiv);
+          // Pulisce i '---'
+          node.textContent = '';
+
+          const hr = document.createElement('hr');
+          const nextLine = document.createElement('div');
+          nextLine.innerHTML = '<br>';
+
+          range.insertNode(nextLine);
           range.insertNode(hr);
 
           const newRange = document.createRange();
-          newRange.setStart(emptyDiv, 0);
+          newRange.setStart(nextLine, 0);
           newRange.collapse(true);
           selection.removeAllRanges();
           selection.addRange(newRange);
           updateURL();
           return;
         }
-      }
 
-      // 2. Pressione di INVIO (Auto-Trattino e invio su To-Do)
-      if (e.key === 'Enter') {
-        const text = node.textContent || '';
-        
-        // Auto-continuità dell'elenco puntato con trattino
-        if (text.startsWith('- ')) {
-          if (text.trim() === '-') {
-            // Se si preme Invio su un trattino vuoto, si interrompe l'elenco
-            e.preventDefault();
-            node.textContent = '';
-            const div = document.createElement('div');
-            div.innerHTML = '<br>';
-            range.insertNode(div);
+        // Gestione A Capo dentro un To-Do
+        const currentTodo = node.nodeType === 1 ? node.closest('.todo-item') : node.parentNode.closest('.todo-item');
+        if (currentTodo) {
+          e.preventDefault();
+          const todoText = currentTodo.querySelector('.todo-text');
+          const textContent = todoText ? todoText.textContent.trim() : '';
+
+          // Se si preme Invio su un To-Do VUOTO, esce dal To-Do e crea riga normale
+          if (textContent === '') {
+            const emptyDiv = document.createElement('div');
+            emptyDiv.innerHTML = '<br>';
+            currentTodo.after(emptyDiv);
+            currentTodo.remove();
+
             const newRange = document.createRange();
-            newRange.setStart(div, 0);
+            newRange.setStart(emptyDiv, 0);
             newRange.collapse(true);
             selection.removeAllRanges();
             selection.addRange(newRange);
           } else {
-            e.preventDefault();
-            const div = document.createElement('div');
-            div.textContent = '- ';
+            // Se c'è testo, crea un NUOVO To-Do sotto
+            const newTodo = document.createElement('div');
+            newTodo.className = 'todo-item';
+            newTodo.innerHTML = `<input type="checkbox" class="todo-checkbox" contenteditable="false"><span class="todo-text" contenteditable="true"><br></span>`;
             
-            // Inserisci nuova riga col trattino
-            if (node.parentNode && node.parentNode !== editor) {
-              node.parentNode.after(div);
-            } else {
-              range.insertNode(div);
-            }
+            currentTodo.after(newTodo);
 
+            const textSpan = newTodo.querySelector('.todo-text');
             const newRange = document.createRange();
-            newRange.setStart(div, 1);
-            newRange.collapse(false);
+            newRange.setStart(textSpan, 0);
+            newRange.collapse(true);
             selection.removeAllRanges();
             selection.addRange(newRange);
           }
           updateURL();
+          return;
         }
       }
 
@@ -186,7 +216,7 @@
       }
     });
 
-    // Gestione click sulle checkbox (Attiva/Disattiva barrato e grigio)
+    // Gestione click sulle checkbox To-Do
     editor.addEventListener('change', (e) => {
       if (e.target.classList.contains('todo-checkbox')) {
         const todoItem = e.target.closest('.todo-item');
@@ -212,7 +242,6 @@
           editor.innerHTML = data.b || '';
           document.title = data.t || 'Note';
 
-          // Ripristina lo stato visivo delle checkbox salvate
           editor.querySelectorAll('.todo-checkbox').forEach(cb => {
             if (cb.hasAttribute('checked')) {
               cb.checked = true;
