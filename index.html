@@ -134,13 +134,19 @@
       outline: none;
       border: none;
       color: var(--text-main);
+      position: relative;
     }
 
-    .editor:empty:before {
+    .editor.is-empty::before {
       content: attr(data-placeholder);
       color: rgba(55, 53, 47, 0.3);
       pointer-events: none;
+      position: absolute;
+      top: 0;
+      left: 0;
     }
+
+    .editor > *:first-child { margin-top: 0; }
 
     /* Headings Style Update */
     .editor h1 { 
@@ -179,7 +185,7 @@
       list-style: none;
       outline: none;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 6px;
       margin: 2px 0;
       user-select: none;
@@ -195,6 +201,7 @@
       width: 14px;
       text-align: center;
       flex-shrink: 0;
+      margin-top: 8px;
     }
 
     .editor details.notion-toggle[open] > summary.notion-toggle-header::before {
@@ -205,6 +212,18 @@
       flex-grow: 1;
       outline: none;
       min-height: 24px;
+      cursor: text;
+    }
+
+    /* Heading styles usable INSIDE the toggle title span (kept inline, not a block swap) */
+    .editor .notion-toggle-title.as-h1 {
+      font-size: 36px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.15; display: block;
+    }
+    .editor .notion-toggle-title.as-h2 {
+      font-size: 24px; font-weight: 600; letter-spacing: -0.018em; line-height: 1.25; display: block;
+    }
+    .editor .notion-toggle-title.as-h3 {
+      font-size: 19px; font-weight: 400; letter-spacing: -0.01em; line-height: 1.35; display: block;
     }
 
     .editor .notion-toggle-body {
@@ -421,7 +440,7 @@
     <input type="text" id="title" class="title-input" placeholder="Untitled" value="Note">
   </div>
 
-  <div id="editor" class="editor" contenteditable="true" data-placeholder="Type '/' or right click for commands..."></div>
+  <div id="editor" class="editor" contenteditable="true" data-placeholder="Type '/' or right click for commands..."><div><br></div></div>
 
   <!-- Command Menu -->
   <div id="command-menu" class="notion-menu">
@@ -545,13 +564,61 @@
       }
     }
 
-    function formatLineBlock(tag, textToKeep) {
+    // La selezione va "ripristinata" da savedRange SOLO quando il focus è
+    // davvero uscito dall'editor (es. dopo aver cliccato un bottone del menu
+    // contestuale, che ruba il focus). Se la selezione corrente è già dentro
+    // #editor (come succede con TUTTE le scorciatoie da tastiera: "-", "> ",
+    // "## ", ecc.) va lasciata stare: forzare sempre savedRange sovrascriveva
+    // la posizione corretta con quella vecchia, salvata l'ultima volta che
+    // era stato aperto un menu, ed era la causa di quasi tutti i bug di
+    // posizionamento (secondo toggle che "torna" al primo, elenchi puntati
+    // che non si creano più dopo il primo, ecc.).
+    function ensureSelectionInEditor() {
+      const sel = window.getSelection();
+      if (sel.rangeCount > 0) {
+        const range = sel.getRangeAt(0);
+        if (editor.contains(range.startContainer)) {
+          return; // la selezione è già valida, non toccarla
+        }
+      }
       restoreSelection();
+    }
+
+    // ---------------------------------------------------------------------
+    // Trova il "contesto di editing" corrente a partire da un nodo:
+    // - 'title'  -> siamo dentro il titolo di un toggle (span.notion-toggle-title)
+    // - 'block'  -> siamo dentro un normale blocco di primo livello (div/p/h1/h2/h3/blockquote/li)
+    // Se non troviamo nessun blocco valido (perché il testo è ancora un nodo
+    // "orfano" direttamente dentro #editor), ritorniamo el:null cosi' il
+    // chiamante sa che deve avvolgere il testo invece di sostituire l'editor.
+    // ---------------------------------------------------------------------
+    function getEditingContext(startNode) {
+      let node = startNode && startNode.nodeType === 3 ? startNode.parentNode : startNode;
+      if (!node) return { type: 'block', el: null };
+
+      const titleEl = node.closest('.notion-toggle-title');
+      if (titleEl) return { type: 'title', el: titleEl };
+
+      let block = node.closest('div, p, h1, h2, h3, blockquote, li');
+      if (block === editor) block = null;
+      return { type: 'block', el: block };
+    }
+
+    function setToggleTitleStyle(titleEl, cmd) {
+      titleEl.classList.remove('as-h1', 'as-h2', 'as-h3');
+      if (cmd === 'h1') titleEl.classList.add('as-h1');
+      else if (cmd === 'h2') titleEl.classList.add('as-h2');
+      else if (cmd === 'h3') titleEl.classList.add('as-h3');
+      // cmd === 'p' -> nessuna classe, torna al testo normale
+      setFocusAtEnd(titleEl);
+      updateURL();
+    }
+
+    function formatLineBlock(tag, textToKeep) {
+      ensureSelectionInEditor();
       const selection = window.getSelection();
       if (!selection.rangeCount) return;
       const range = selection.getRangeAt(0);
-      let node = range.startContainer;
-      if (node.nodeType === 3) node = node.parentNode;
 
       const element = document.createElement(tag);
       if (tag === 'ul' || tag === 'ol') {
@@ -560,11 +627,22 @@
         element.innerHTML = textToKeep || '<br>';
       }
 
-      let blockToReplace = node.closest('div, p, h1, h2, h3, blockquote');
-      if (blockToReplace && blockToReplace !== editor) {
-        blockToReplace.replaceWith(element);
+      const ctx = getEditingContext(range.startContainer);
+
+      if (ctx.el) {
+        // Blocco di primo livello trovato: lo sostituiamo normalmente
+        ctx.el.replaceWith(element);
       } else {
-        range.insertNode(element);
+        // Nessun blocco (es. testo "orfano" ancora dentro #editor sulla
+        // primissima riga): ripuliamo il testo residuo e inseriamo il nuovo
+        // elemento al posto giusto, cosi' non restano caratteri duplicati.
+        range.deleteContents();
+        let node = range.startContainer;
+        if (node.nodeType === 3) node = node.parentNode;
+        if (node === editor) {
+          editor.innerHTML = '';
+        }
+        editor.appendChild(element);
       }
 
       const target = element.querySelector('li') || element;
@@ -573,14 +651,14 @@
     }
 
     function insertToggleBlock(textToKeep = '') {
-      restoreSelection();
+      ensureSelectionInEditor();
       const selection = window.getSelection();
       if (!selection.rangeCount) return;
       const range = selection.getRangeAt(0);
-      let node = range.startContainer;
-      
-      let targetNode = node.nodeType === 3 ? node.parentNode : node;
-      let blockToReplace = targetNode.closest('div, p, h1, h2, h3, blockquote');
+
+      const ctx = getEditingContext(range.startContainer);
+      // Non ha senso creare un toggle dentro il titolo di un altro toggle
+      if (ctx.type === 'title') return;
 
       const details = document.createElement('details');
       details.className = 'notion-toggle';
@@ -591,7 +669,11 @@
 
       const titleSpan = document.createElement('span');
       titleSpan.className = 'notion-toggle-title';
-      titleSpan.contentEditable = 'true';
+      // NB: niente contentEditable qui. #editor è già contenteditable, e
+      // annidare un'altra regione editabile dentro (span contentEditable
+      // dentro un editor già editabile) confonde il browser sul backspace
+      // ai bordi, causando comportamenti a caso come il <details> che
+      // torna al rendering nativo "Dettagli" quando il titolo si svuota.
       titleSpan.innerHTML = textToKeep || '<br>';
 
       summary.appendChild(titleSpan);
@@ -603,10 +685,14 @@
       details.appendChild(summary);
       details.appendChild(body);
 
-      if (blockToReplace && blockToReplace !== editor) {
-        blockToReplace.replaceWith(details);
+      if (ctx.el) {
+        ctx.el.replaceWith(details);
       } else {
-        range.insertNode(details);
+        range.deleteContents();
+        let node = range.startContainer;
+        if (node.nodeType === 3) node = node.parentNode;
+        if (node === editor) editor.innerHTML = '';
+        editor.appendChild(details);
       }
 
       setFocusAtEnd(titleSpan);
@@ -614,24 +700,28 @@
     }
 
     function insertDivider() {
-      restoreSelection();
+      ensureSelectionInEditor();
       const selection = window.getSelection();
       if (!selection.rangeCount) return;
       const range = selection.getRangeAt(0);
-      let node = range.startContainer;
-      if (node.nodeType === 3) node = node.parentNode;
+
+      const ctx = getEditingContext(range.startContainer);
+      if (ctx.type === 'title') return;
 
       const hr = document.createElement('hr');
       const nextDiv = document.createElement('div');
       nextDiv.innerHTML = '<br>';
 
-      let blockToReplace = node.closest('div, p, h1, h2, h3, blockquote');
-      if (blockToReplace && blockToReplace !== editor) {
-        blockToReplace.replaceWith(hr);
+      if (ctx.el) {
+        ctx.el.replaceWith(hr);
         hr.after(nextDiv);
       } else {
-        range.insertNode(hr);
-        hr.after(nextDiv);
+        range.deleteContents();
+        let node = range.startContainer;
+        if (node.nodeType === 3) node = node.parentNode;
+        if (node === editor) editor.innerHTML = '';
+        editor.appendChild(hr);
+        editor.appendChild(nextDiv);
       }
 
       setFocusAtEnd(nextDiv);
@@ -639,7 +729,7 @@
     }
 
     function toggleHighlight() {
-      restoreSelection();
+      ensureSelectionInEditor();
       const selection = window.getSelection();
       if (!selection.rangeCount || selection.isCollapsed) return;
 
@@ -658,26 +748,29 @@
     }
 
     function insertTodo(remainingText = '', targetContainer = null) {
-      restoreSelection();
+      if (!targetContainer) ensureSelectionInEditor();
       const selection = window.getSelection();
       if (!selection.rangeCount && !targetContainer) return;
 
       const todoDiv = document.createElement('div');
       todoDiv.className = 'todo-item';
-      todoDiv.innerHTML = `<input type="checkbox" class="todo-checkbox" contenteditable="false"><span class="todo-text" contenteditable="true">${remainingText || '<br>'}</span>`;
+      todoDiv.innerHTML = `<input type="checkbox" class="todo-checkbox" contenteditable="false"><span class="todo-text">${remainingText || '<br>'}</span>`;
 
       if (targetContainer) {
         targetContainer.after(todoDiv);
       } else {
         const range = selection.getRangeAt(0);
-        let node = range.startContainer;
-        if (node.nodeType === 3) node = node.parentNode;
-        let blockToReplace = node.closest('div, p, h1, h2, h3, blockquote');
+        const ctx = getEditingContext(range.startContainer);
+        if (ctx.type === 'title') return;
 
-        if (blockToReplace && blockToReplace !== editor && !blockToReplace.classList.contains('notion-toggle-body')) {
-          blockToReplace.replaceWith(todoDiv);
+        if (ctx.el) {
+          ctx.el.replaceWith(todoDiv);
         } else {
-          range.insertNode(todoDiv);
+          range.deleteContents();
+          let node = range.startContainer;
+          if (node.nodeType === 3) node = node.parentNode;
+          if (node === editor) editor.innerHTML = '';
+          editor.appendChild(todoDiv);
         }
       }
 
@@ -706,38 +799,53 @@
     }
 
     function executeCommand(cmd) {
+      ensureSelectionInEditor();
       cleanSlashText();
-      
-      // Se è un comando inline (bold, italic, strike), usa la selezione esatta dell'utente
+
+      // Se è un comando inline (bold, italic, strike, highlight), usa la
+      // selezione esatta dell'utente: funziona identico ovunque, anche
+      // dentro al titolo di un toggle o in una to-do.
       if (['bold', 'italic', 'strike', 'highlight'].includes(cmd)) {
-        restoreSelection();
         if (cmd === 'bold') { document.execCommand('bold'); updateURL(); }
         else if (cmd === 'italic') { document.execCommand('italic'); updateURL(); }
         else if (cmd === 'strike') { document.execCommand('strikeThrough'); updateURL(); }
         else if (cmd === 'highlight') toggleHighlight();
       } else {
-        // Se è un comando di blocco intero, recupera il testo completo della riga/blocco selezionato
+        // Comando di "blocco": recuperiamo il contesto (blocco normale o
+        // titolo di un toggle) e il testo che deve essere preservato.
         const selection = window.getSelection();
         let currentText = '';
+        let ctx = { type: 'block', el: null };
+
         if (selection.rangeCount) {
-          let node = selection.getRangeAt(0).startContainer;
-          let block = node.nodeType === 3 ? node.parentNode.closest('div, p, h1, h2, h3, blockquote, li, .todo-text') : node.closest('div, p, h1, h2, h3, blockquote, li, .todo-text');
-          if (block) currentText = block.textContent;
+          ctx = getEditingContext(selection.getRangeAt(0).startContainer);
+          if (ctx.el) currentText = ctx.el.textContent;
         }
 
-        if (cmd === 'p') formatLineBlock('div', currentText);
-        else if (cmd === 'h1') formatLineBlock('h1', currentText);
-        else if (cmd === 'h2') formatLineBlock('h2', currentText);
-        else if (cmd === 'h3') formatLineBlock('h3', currentText);
-        else if (cmd === 'toggle') insertToggleBlock(currentText);
-        else if (cmd === 'bullet') formatLineBlock('ul', currentText);
-        else if (cmd === 'number') formatLineBlock('ol', currentText);
-        else if (cmd === 'todo') insertTodo(currentText);
-        else if (cmd === 'quote') formatLineBlock('blockquote', currentText);
-        else if (cmd === 'hr') insertDivider();
-        else if (cmd === 'menu') showMenuAtCaret();
+        if (ctx.type === 'title') {
+          // Dentro al titolo di un toggle: solo gli heading (e "Text" per
+          // resettare) hanno senso, restano testo del titolo e non lo
+          // trasformano in un blocco separato.
+          if (['p', 'h1', 'h2', 'h3'].includes(cmd)) {
+            setToggleTitleStyle(ctx.el, cmd);
+          }
+          // bullet/number/todo/toggle/quote/hr dentro al titolo: ignorati,
+          // vanno applicati dentro al corpo del toggle, non sul titolo.
+        } else {
+          if (cmd === 'p') formatLineBlock('div', currentText);
+          else if (cmd === 'h1') formatLineBlock('h1', currentText);
+          else if (cmd === 'h2') formatLineBlock('h2', currentText);
+          else if (cmd === 'h3') formatLineBlock('h3', currentText);
+          else if (cmd === 'toggle') insertToggleBlock(currentText);
+          else if (cmd === 'bullet') formatLineBlock('ul', currentText);
+          else if (cmd === 'number') formatLineBlock('ol', currentText);
+          else if (cmd === 'todo') insertTodo(currentText);
+          else if (cmd === 'quote') formatLineBlock('blockquote', currentText);
+          else if (cmd === 'hr') insertDivider();
+          else if (cmd === 'menu') showMenuAtCaret();
+        }
       }
-      
+
       hideMenu();
     }
 
@@ -851,7 +959,23 @@
       const caretPos = range.startOffset;
       const lineText = text.slice(0, caretPos);
 
-      if (e.key === ' ') {
+      // Dentro al titolo di un toggle solo le scorciatoie di heading hanno
+      // senso (applicano uno stile al titolo stesso). Le altre (liste,
+      // to-do, citazioni, nuovo toggle...) restano disattivate lì dentro:
+      // vanno usate nel corpo del toggle, non sul titolo.
+      const ctxForShortcuts = getEditingContext(node);
+
+      if (e.key === ' ' && ctxForShortcuts.type === 'title') {
+        if (lineText === '#' || lineText === '##' || lineText === '###') {
+          e.preventDefault();
+          node.textContent = text.slice(caretPos); // rimuove i cancelletti digitati
+          const level = lineText.length === 1 ? 'h1' : lineText.length === 2 ? 'h2' : 'h3';
+          setToggleTitleStyle(ctxForShortcuts.el, level);
+        }
+        return;
+      }
+
+      if (e.key === ' ' && ctxForShortcuts.type !== 'title') {
         if (lineText === '#') { e.preventDefault(); formatLineBlock('h1', text.slice(caretPos)); return; }
         if (lineText === '##') { e.preventDefault(); formatLineBlock('h2', text.slice(caretPos)); return; }
         if (lineText === '###') { e.preventDefault(); formatLineBlock('h3', text.slice(caretPos)); return; }
@@ -860,6 +984,18 @@
         if (lineText === '-' || lineText === '*') { e.preventDefault(); formatLineBlock('ul', text.slice(caretPos)); return; }
         if (lineText === '1.') { e.preventDefault(); formatLineBlock('ol', text.slice(caretPos)); return; }
         if (lineText === '[]') { e.preventDefault(); insertTodo(text.slice(caretPos)); return; }
+      }
+
+      // "---" o "***" seguito da Invio -> linea divisoria (non ha senso
+      // dentro al titolo di un toggle).
+      if (e.key === 'Enter' && ctxForShortcuts.type !== 'title') {
+        const fullLine = text.trim();
+        if (fullLine === '---' || fullLine === '***') {
+          e.preventDefault();
+          node.textContent = '';
+          insertDivider();
+          return;
+        }
       }
 
       let parentBlock = node.nodeType === 1 ? node : node.parentNode;
@@ -935,6 +1071,7 @@
     });
 
     document.querySelectorAll('[data-cmd]').forEach(btn => {
+      btn.addEventListener('mousedown', (e) => e.preventDefault());
       btn.addEventListener('click', (e) => {
         const cmd = e.currentTarget.getAttribute('data-cmd');
         executeCommand(cmd);
@@ -977,7 +1114,7 @@
           const decoded = decodeURIComponent(escape(atob(hash)));
           const data = JSON.parse(decoded);
           titleInput.value = data.t || 'Note';
-          editor.innerHTML = data.b || '';
+          editor.innerHTML = data.b || '<div><br></div>';
           if (data.e) setFavicon(data.e);
 
           document.title = data.t || 'Note';
@@ -993,12 +1130,21 @@
           }
         }
       }
+      updatePlaceholder();
+    }
+
+    function updatePlaceholder() {
+      const onlyEmptyLine = editor.children.length === 1
+        && editor.children[0].tagName === 'DIV'
+        && editor.textContent.trim() === '';
+      editor.classList.toggle('is-empty', onlyEmptyLine);
     }
 
     function updateURL() {
       const titleText = titleInput.value;
       const bodyHTML = editor.innerHTML;
       document.title = titleText || 'Note';
+      updatePlaceholder();
 
       if (bodyHTML || (titleText && titleText !== 'Note') || currentEmoji !== '✏️') {
         const payload = JSON.stringify({ t: titleText, b: bodyHTML, e: currentEmoji });
